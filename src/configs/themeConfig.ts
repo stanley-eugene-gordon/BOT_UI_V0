@@ -49,7 +49,7 @@ type ThemeConfig = {
 
 const themeConfig: ThemeConfig = {
   // ** Layout Configs
-  templateName: 'Vuexy' /* App Name */,
+  templateName: 'ISA' /* App Name */,
   layout: 'horizontal' /* vertical | horizontal */,
   mode: 'dark' as Mode /* light | dark | semi-dark /*! Note: semi-dark value will only work for Vertical Layout */,
   direction: 'ltr' /* ltr | rtl */,
@@ -85,4 +85,3 @@ const themeConfig: ThemeConfig = {
 }
 
 export default themeConfig
-
