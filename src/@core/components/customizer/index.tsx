@@ -169,7 +169,6 @@ const Customizer = () => {
               </RadioGroup>
             </Box>
 
-            {/* Color Picker */}
             <div>
               <Typography>Primary Color</Typography>
               <Box sx={{ display: 'flex' }}>
@@ -369,28 +368,6 @@ const Customizer = () => {
                 />
               </Box>
             )}
-          </CustomizerSpacing>
-
-          <Divider sx={{ m: '0 !important' }} />
-
-          <CustomizerSpacing className='customizer-body'>
-            <Typography
-              component='p'
-              variant='caption'
-              sx={{ mb: 5, color: 'text.disabled', textTransform: 'uppercase' }}
-            >
-              Misc
-            </Typography>
-
-            {/* RTL */}
-            <Box sx={{ mb: 5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Typography>RTL</Typography>
-              <Switch
-                name='direction'
-                checked={direction === 'rtl'}
-                onChange={e => handleChange('direction', e.target.checked ? 'rtl' : 'ltr')}
-              />
-            </Box>
           </CustomizerSpacing>
         </PerfectScrollbar>
       </Drawer>
