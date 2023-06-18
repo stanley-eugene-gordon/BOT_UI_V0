@@ -5,19 +5,19 @@ const navigation = (): HorizontalNavItemsType => [
   {
     title: 'Home',
     path: '/home',
-    icon: 'tabler:smart-home',
+    icon: 'tabler:smart-home'
   },
   {
-    title: 'Second Page',
+    title: 'Students',
     path: '/second-page',
-    icon: 'tabler:mail',
+    icon: 'tabler:users'
   },
   {
     path: '/acl',
     action: 'read',
     subject: 'acl-page',
-    title: 'Access Control',
-    icon: 'tabler:shield',
+    title: 'Assessments',
+    icon: 'tabler:file-text'
   }
 ]
 

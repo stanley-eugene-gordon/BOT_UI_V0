@@ -56,16 +56,16 @@ const MenuNavLink = styled(ListItemButton)<
   },
   '&.active': {
     '&, &:hover': {
-      boxShadow: `0px 2px 6px ${hexToRGBA(theme.palette.primary.main, 0.48)}`,
+      boxShadow: `0px 1px 1px ${hexToRGBA(theme.palette.primary.main, 0.48)}`,
       background: `linear-gradient(72.47deg, ${
-        theme.direction === 'ltr' ? theme.palette.primary.main : hexToRGBA(theme.palette.primary.main, 0.7)
+        theme.direction === 'ltr' ? theme.palette.primary.main : hexToRGBA(theme.palette.primary.main, 1)
       } 22.16%, ${
-        theme.direction === 'ltr' ? hexToRGBA(theme.palette.primary.main, 0.7) : theme.palette.primary.main
+        theme.direction === 'ltr' ? hexToRGBA(theme.palette.primary.main, 1) : theme.palette.primary.main
       } 76.47%)`,
       '&.Mui-focusVisible': {
         background: `linear-gradient(72.47deg, ${theme.palette.primary.dark} 22.16%, ${hexToRGBA(
           theme.palette.primary.dark,
-          0.7
+          1
         )} 76.47%)`
       }
     },

@@ -103,17 +103,17 @@ const HorizontalNavLink = (props: Props) => {
             ...(!hasParent
               ? {
                   '&.active, &.active:hover': {
-                    boxShadow: theme => `0px 2px 6px ${hexToRGBA(theme.palette.primary.main, 0.48)}`,
+                    boxShadow: theme => `0px 1px 1px ${hexToRGBA(theme.palette.primary.main, 0.48)}`,
                     background: theme =>
                       `linear-gradient(72.47deg, ${theme.palette.primary.main} 22.16%, ${hexToRGBA(
                         theme.palette.primary.main,
-                        0.7
+                        1
                       )} 76.47%)`,
                     '&:focus-visible': {
                       background: theme =>
                         `linear-gradient(72.47deg, ${theme.palette.primary.dark} 22.16%, ${hexToRGBA(
                           theme.palette.primary.dark,
-                          0.7
+                          1
                         )} 76.47%)`
                     },
                     '& .MuiTypography-root, & .MuiListItemIcon-root': {
