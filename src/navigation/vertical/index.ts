@@ -4,15 +4,21 @@ import { VerticalNavItemsType } from 'src/@core/layouts/types'
 const navigation = (): VerticalNavItemsType => {
   return [
     {
-      title: 'Analytics',
-      icon: 'tabler:chart-pie',
-      path: '/dashboards/analytics'
+      title: 'Home',
+      path: '/home',
+      icon: 'tabler:smart-home',
     },
-
     {
-      title: 'Users',
-      icon: 'tabler:user',
-      path: '/apps/user/list'
+      title: 'Second Page',
+      path: '/second-page',
+      icon: 'tabler:mail',
+    },
+    {
+      path: '/acl',
+      action: 'read',
+      subject: 'acl-page',
+      title: 'Access Control',
+      icon: 'tabler:shield',
     }
   ]
 }
