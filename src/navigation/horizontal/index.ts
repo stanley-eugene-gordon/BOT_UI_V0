@@ -3,9 +3,9 @@ import { HorizontalNavItemsType } from 'src/@core/layouts/types'
 
 const navigation = (): HorizontalNavItemsType => [
   {
-    title: 'Dashboard',
-    path: '/dashboard',
-    icon: 'tabler:smart-home'
+    title: 'Analytics',
+    path: '/analytics',
+    icon: 'tabler:chart-pie'
   },
   {
     title: 'Students',

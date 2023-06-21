@@ -116,8 +116,8 @@ const App = (props: ExtendedAppProps) => {
   return (
     <CacheProvider value={emotionCache}>
       <Head>
-        <title>{`${themeConfig.templateName}`}</title>
-        <meta name='description' content={`${themeConfig.templateName}`} />
+        <title>Intelligent Study Analysis</title>
+        <meta name='description' content={'Intelligent Study Analysis'} />
         <meta name='keywords' content='intelligent Study Analysis(ISA)' />
         <meta name='viewport' content='initial-scale=1, width=device-width' />
       </Head>
