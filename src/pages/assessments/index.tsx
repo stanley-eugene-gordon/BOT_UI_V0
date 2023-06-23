@@ -1,6 +1,7 @@
 // ** React Imports
-import { Ref, useState, forwardRef, ReactElement } from 'react'
-import { ReactMic } from 'react-mic'
+import { Ref, useState, forwardRef, ReactElement, useEffect, Fragment } from 'react'
+import { AudioRecorder, useAudioRecorder } from 'react-audio-voice-recorder'
+import CircularProgress from '@mui/material/CircularProgress'
 
 // ** MUI Imports
 import Box from '@mui/material/Box'
@@ -68,50 +69,51 @@ const TabLabel = (props: TabLabelProps) => {
 const tabsArr = ['detailsTab', 'frameworkTab', 'DatabaseTab', 'paymentTab', 'submitTab']
 
 const DialogCreateApp = () => {
-  // ** States
+  const [feedback, setFeedback] = useState('Hello my friend, how are you?')
+  const [loading, setLoading] = useState(false)
   const [show, setShow] = useState<boolean>(false)
   const [activeTab, setActiveTab] = useState<string>('detailsTab')
-  const [record, setRecord] = useState(false)
-  const [audioBlobUrl, setAudioBlobUrl] = useState('')
-  const [feedback, setFeedback] = useState('')
+  const [evaluationDone, setEvaluationDone] = useState<boolean>(false)
 
-  const startRecording = () => {
-    setRecord(true)
+  const addAudioElement = (blob: any) => {
+    const url = URL.createObjectURL(blob)
+    const audio = document.createElement('audio')
+    audio.src = url
+    audio.controls = true
+    document.body.appendChild(audio)
   }
 
-  const stopRecording = () => {
-    setRecord(false)
-  }
+  const recorderControls = useAudioRecorder()
 
-  const onData = async (recordedBlob: any) => {
-    console.log('chunk of real-time data is: ', recordedBlob)
-  }
+  useEffect(() => {
+    if (!recorderControls.recordingBlob) return
+    const formData = new FormData()
+    formData.append('file', recorderControls.recordingBlob)
+    if (evaluationDone === false) handleUpload(formData)
+  }, [recorderControls.recordingBlob])
 
-  const onStop = async (recordedBlob: IRecordedBlob) => {
-    console.log('recordedBlob is: ', recordedBlob)
-    setAudioBlobUrl(recordedBlob.blobURL)
-
-    let formData = new FormData()
-    formData.append('file', recordedBlob.blob)
-
+  const handleUpload = async (formData: FormData) => {
     const result = await fetch('http://0.0.0.0:5000/v2/generate_text', {
       method: 'POST',
-      mode: 'cors', // set mode to 'cors'
+      mode: 'cors',
       headers: {
         Accept: 'application/json'
       },
       body: formData
     })
+    setLoading(true)
     const data = await result.json()
     const completionMessage = data?.choices[0].message.content
 
-    if (data) setFeedback(completionMessage)
+    if (completionMessage) {
+      setFeedback(completionMessage)
+      setLoading(false)
+      setActiveTab('frameworkTab')
+      setEvaluationDone(true)
+    }
   }
 
-  // ** Hook
   const { settings } = useSettings()
-
-  // ** Var
   const { direction } = settings
 
   const handleClose = () => {
@@ -169,15 +171,30 @@ const DialogCreateApp = () => {
       </Box>
     )
   }
-  interface IRecordedBlob {
-    blob: Blob
-    startTime: number
-    stopTime: number
-    option: {
-      audioBitsPerSecond: number
-      mimeType: string
+
+  const speak = (text: any) => {
+    const utterance = new SpeechSynthesisUtterance(text)
+
+    // Wait for voices to load
+    speechSynthesis.onvoiceschanged = () => {
+      // Get list of voices and select one
+      const voices = window.speechSynthesis.getVoices()
+
+      // Find the voice named 'Daniel'
+      const danielVoice = voices.find(voice => voice.name === 'Daniel')
+
+      if (danielVoice) {
+        utterance.voice = danielVoice
+      } else {
+        console.error("Couldn't find the voice 'Daniel'")
+      }
+
+      utterance.volume = 1 // Full volume
+      utterance.rate = 0.8 // Normal speed
+      utterance.pitch = 1 // Normal pitch
+
+      speechSynthesis.speak(utterance)
     }
-    blobURL: string
   }
 
   return (
@@ -185,13 +202,13 @@ const DialogCreateApp = () => {
       <CardContent sx={{ textAlign: 'center', '& svg': { mb: 2 } }}>
         <Icon icon='tabler:3d-cube-sphere' fontSize='2rem' />
         <Typography variant='h6' sx={{ mb: 4 }}>
-          Assessment AI
+          POC - B1 Evaluation
         </Typography>
         <Typography sx={{ mb: 3 }}>
-          Click on the button below to create a new assessment. You can also click on the <strong>show</strong> button
+          This is a proof of concept for the B1 Evaluation. Click the button below to start.
         </Typography>
         <Button variant='contained' onClick={() => setShow(true)}>
-          Create Assessment
+          B1 Evaluation
         </Button>
       </CardContent>
       <Dialog
@@ -216,7 +233,7 @@ const DialogCreateApp = () => {
           </CustomCloseButton>
           <Box sx={{ mb: 8, textAlign: 'center' }}>
             <Typography variant='h3' sx={{ mb: 3 }}>
-              Create Assessment
+              B1 - Test
             </Typography>
           </Box>
           <Box sx={{ display: 'flex', flexWrap: { xs: 'wrap', md: 'nowrap' } }}>
@@ -262,51 +279,60 @@ const DialogCreateApp = () => {
                   }
                 />
               </TabList>
-              <TabPanel value='detailsTab' sx={{ flexGrow: 1, p: '0 !important', mt: [1, 0], minHeight: '500px' }}>
-                <Box
+              {loading === true && (
+                <CircularProgress
                   sx={{
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    minHeight: '200px',
-                    width: '100%',
-                    '& .sound-wave': {
+                    color: 'common.white',
+                    width: '20px !important',
+                    height: '20px !important',
+                    mr: theme => theme.spacing(2)
+                  }}
+                />
+              )}
+
+              {loading === false && (
+                <TabPanel value='detailsTab' sx={{ flexGrow: 1, p: '0 !important', mt: [1, 0], minHeight: '500px' }}>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      minHeight: '200px',
                       width: '100%',
-                      height: '50px',
-                      backgroundColor: '#FF4081',
-                      borderRadius: '5px'
-                    }
-                  }}
-                >
-                  <ReactMic
-                    record={record}
-                    className='sound-wave'
-                    onStop={onStop}
-                    onData={onData}
-                    strokeColor='#000000'
-                    backgroundColor='#FF4081'
-                  />
-                </Box>
-                <Button onClick={startRecording} type='button' variant='contained' color='primary'>
-                  Record
-                </Button>
+                      '& .sound-wave': {
+                        width: '100%',
+                        height: '50px',
+                        backgroundColor: '#FF4081',
+                        borderRadius: '5px'
+                      }
+                    }}
+                  >
+                    <AudioRecorder onRecordingComplete={addAudioElement} recorderControls={recorderControls} />
+                  </Box>
+                  <Button onClick={recorderControls.startRecording} type='button' variant='contained' color='primary'>
+                    Record
+                  </Button>
 
-                <Button
-                  onClick={stopRecording}
-                  type='button'
-                  variant='contained'
-                  color='error'
-                  sx={{
-                    ml: 2
-                  }}
-                >
-                  Stop
-                </Button>
+                  <Button onClick={recorderControls.stopRecording} type='button' variant='contained' color='secondary'>
+                    Stop
+                  </Button>
+                </TabPanel>
+              )}
 
-                {renderTabFooter()}
-              </TabPanel>
               <TabPanel value='frameworkTab' sx={{ flexGrow: 1, p: '0 !important', mt: [6, 0], minHeight: '500px' }}>
-                <p>{feedback}</p>
+                <p>
+                  {feedback.split('\n').map((item, key) => {
+                    return (
+                      <Fragment key={key}>
+                        {item}
+                        <br />
+                      </Fragment>
+                    )
+                  })}
+                </p>
+                <Button onClick={() => speak(feedback)} type='button' variant='contained' color='secondary'>
+                  Play Feedback
+                </Button>
                 {renderTabFooter()}
               </TabPanel>
             </TabContext>
