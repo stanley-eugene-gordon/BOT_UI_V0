@@ -1,79 +1,84 @@
 // ** React Imports
-import { Ref, useState, forwardRef, ReactElement, useEffect, Fragment } from 'react'
+import { useState, useEffect, Fragment } from 'react'
 import { AudioRecorder, useAudioRecorder } from 'react-audio-voice-recorder'
-import CircularProgress from '@mui/material/CircularProgress'
 
 // ** MUI Imports
 import Box from '@mui/material/Box'
-import Tab from '@mui/material/Tab'
 import Card from '@mui/material/Card'
-import TabList from '@mui/lab/TabList'
-import TabPanel from '@mui/lab/TabPanel'
 import Avatar from '@mui/material/Avatar'
-import Dialog from '@mui/material/Dialog'
 import Button from '@mui/material/Button'
-import TabContext from '@mui/lab/TabContext'
-import { styled } from '@mui/material/styles'
+import Stepper from '@mui/material/Stepper'
+import StepLabel from '@mui/material/StepLabel'
 import Typography from '@mui/material/Typography'
-import CardContent from '@mui/material/CardContent'
-import Fade, { FadeProps } from '@mui/material/Fade'
-import DialogContent from '@mui/material/DialogContent'
-import IconButton, { IconButtonProps } from '@mui/material/IconButton'
-
-// ** Icon Imports
+import { styled, useTheme } from '@mui/material/styles'
+import MuiStep, { StepProps } from '@mui/material/Step'
+import CardContent, { CardContentProps } from '@mui/material/CardContent'
+import AccordionSummary from '@mui/material/AccordionSummary'
+import AccordionDetails from '@mui/material/AccordionDetails'
 import Icon from 'src/@core/components/icon'
+import Accordion from '@mui/material/Accordion'
 
-// ** Hook Imports
-import { useSettings } from 'src/@core/hooks/useSettings'
+// ** Custom Components Imports
+import CustomAvatar from 'src/@core/components/mui/avatar'
 
-interface TabLabelProps {
-  title: string
-  active: boolean
-  subtitle: string
-  icon: ReactElement
-}
+import { hexToRGBA } from 'src/@core/utils/hex-to-rgba'
+import StepperWrapper from 'src/@core/styles/mui/stepper'
 
-const Transition = forwardRef(function Transition(
-  props: FadeProps & { children?: ReactElement<any, any> },
-  ref: Ref<unknown>
-) {
-  return <Fade ref={ref} {...props} />
-})
+const steps = [
+  {
+    icon: 'tabler:file-text',
+    title: 'B1 level',
+    subtitle: 'B1 level test'
+  },
+  {
+    icon: 'tabler:file-text',
+    subtitle: 'B1 level result',
+    title: 'Evaluation'
+  }
+]
 
-const TabLabel = (props: TabLabelProps) => {
-  const { icon, title, subtitle, active } = props
+const StepperHeaderContainer = styled(CardContent)<CardContentProps>(({ theme }) => ({
+  borderRight: `1px solid ${theme.palette.divider}`,
+  [theme.breakpoints.down('lg')]: {
+    borderRight: 0,
+    borderBottom: `1px solid ${theme.palette.divider}`
+  }
+}))
 
-  return (
-    <div>
-      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-        <Avatar
-          variant='rounded'
-          sx={{
-            mr: 3,
-            ...(active
-              ? { color: 'common.white', backgroundColor: 'primary.main' }
-              : { backgroundColor: 'action.selected' })
-          }}
-        >
-          {icon}
-        </Avatar>
-        <Box sx={{ textAlign: 'left' }}>
-          <Typography variant='h6'>{title}</Typography>
-          <Typography sx={{ textTransform: 'none', color: 'text.disabled', fontWeight: 500 }}>{subtitle}</Typography>
-        </Box>
-      </Box>
-    </div>
-  )
-}
+const Step = styled(MuiStep)<StepProps>(({ theme }) => ({
+  '& .MuiStepLabel-root': {
+    paddingTop: 0
+  },
+  '&:not(:last-of-type) .MuiStepLabel-root': {
+    paddingBottom: theme.spacing(5)
+  },
+  '&:last-of-type .MuiStepLabel-root': {
+    paddingBottom: 0
+  },
+  '& .MuiStepLabel-iconContainer': {
+    display: 'none'
+  },
+  '& .step-subtitle': {
+    color: `${theme.palette.text.disabled} !important`
+  },
+  '& + svg': {
+    color: theme.palette.text.disabled
+  },
+  '&.Mui-completed .step-title': {
+    color: theme.palette.text.disabled
+  },
+  '& .MuiStepLabel-label': {
+    cursor: 'pointer'
+  }
+}))
 
-const tabsArr = ['detailsTab', 'frameworkTab', 'DatabaseTab', 'paymentTab', 'submitTab']
-
-const DialogCreateApp = () => {
-  const [feedback, setFeedback] = useState('Hello my friend, how are you?')
-  const [loading, setLoading] = useState(false)
-  const [show, setShow] = useState<boolean>(false)
-  const [activeTab, setActiveTab] = useState<string>('detailsTab')
+const PropertyListingWizard = () => {
+  // ** States
+  const [activeStep, setActiveStep] = useState<number>(0)
+  const [feedback, setFeedback] = useState('')
   const [evaluationDone, setEvaluationDone] = useState<boolean>(false)
+  const [recording, setRecording] = useState<boolean>(false)
+  const [currentIdiom, setCurrentIdiom] = useState<string>('')
 
   const addAudioElement = (blob: any) => {
     const url = URL.createObjectURL(blob)
@@ -85,13 +90,6 @@ const DialogCreateApp = () => {
 
   const recorderControls = useAudioRecorder()
 
-  useEffect(() => {
-    if (!recorderControls.recordingBlob) return
-    const formData = new FormData()
-    formData.append('file', recorderControls.recordingBlob)
-    if (evaluationDone === false) handleUpload(formData)
-  }, [recorderControls.recordingBlob])
-
   const handleUpload = async (formData: FormData) => {
     const result = await fetch('http://0.0.0.0:5000/v2/generate_text', {
       method: 'POST',
@@ -101,92 +99,41 @@ const DialogCreateApp = () => {
       },
       body: formData
     })
-    setLoading(true)
     const data = await result.json()
-    const completionMessage = data?.choices[0].message.content
+    const completionMessage = data?.text.choices[0].message.content
 
     if (completionMessage) {
       setFeedback(completionMessage)
-      setLoading(false)
-      setActiveTab('frameworkTab')
+      setCurrentIdiom(data?.language)
       setEvaluationDone(true)
     }
   }
 
-  const { settings } = useSettings()
-  const { direction } = settings
-
-  const handleClose = () => {
-    setShow(false)
-    setActiveTab('detailsTab')
-  }
-
-  const nextArrow = direction === 'ltr' ? 'tabler:arrow-right' : 'tabler:arrow-left'
-  const previousArrow = direction === 'ltr' ? 'tabler:arrow-left' : 'tabler:arrow-right'
-
-  const CustomCloseButton = styled(IconButton)<IconButtonProps>(({ theme }) => ({
-    top: 0,
-    right: 0,
-    color: 'grey.500',
-    position: 'absolute',
-    boxShadow: theme.shadows[2],
-    transform: 'translate(10px, -10px)',
-    borderRadius: theme.shape.borderRadius,
-    backgroundColor: `${theme.palette.background.paper} !important`,
-    transition: 'transform 0.25s ease-in-out, box-shadow 0.25s ease-in-out',
-    '&:hover': {
-      transform: 'translate(7px, -5px)'
-    }
-  }))
-
-  const renderTabFooter = () => {
-    const prevTab = tabsArr[tabsArr.indexOf(activeTab) - 1]
-    const nextTab = tabsArr[tabsArr.indexOf(activeTab) + 1]
-
-    return (
-      <Box sx={{ mt: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Button
-          variant='tonal'
-          color='secondary'
-          disabled={activeTab === 'detailsTab'}
-          onClick={() => setActiveTab(prevTab)}
-          startIcon={<Icon icon={previousArrow} />}
-        >
-          Previous
-        </Button>
-        <Button
-          variant='contained'
-          color={activeTab === 'submitTab' ? 'success' : 'primary'}
-          endIcon={<Icon icon={activeTab === 'submitTab' ? 'tabler:check' : nextArrow} />}
-          onClick={() => {
-            if (activeTab !== 'submitTab') {
-              setActiveTab(nextTab)
-            } else {
-              handleClose()
-            }
-          }}
-        >
-          {activeTab === 'submitTab' ? 'Submit' : 'Next'}
-        </Button>
-      </Box>
-    )
-  }
-
   const speak = (text: any) => {
     const utterance = new SpeechSynthesisUtterance(text)
-
-    // Wait for voices to load
     speechSynthesis.onvoiceschanged = () => {
-      // Get list of voices and select one
       const voices = window.speechSynthesis.getVoices()
 
-      // Find the voice named 'Daniel'
-      const danielVoice = voices.find(voice => voice.name === 'Daniel')
+      var idiom = ''
 
-      if (danielVoice) {
-        utterance.voice = danielVoice
-      } else {
-        console.error("Couldn't find the voice 'Daniel'")
+      if (currentIdiom === 'english') {
+        idiom = 'Eddy (English (US))'
+      }
+
+      if (currentIdiom === 'spanish') {
+        idiom = 'Grandma (Spanish (Mexico))'
+      }
+
+      if (currentIdiom === 'french') {
+        idiom = 'Grandpa (French (Canada))'
+      }
+
+      console.log(voices)
+
+      const matchedVoice = voices.find(voice => voice.name === idiom)
+
+      if (matchedVoice) {
+        utterance.voice = matchedVoice
       }
 
       utterance.volume = 1 // Full volume
@@ -197,150 +144,185 @@ const DialogCreateApp = () => {
     }
   }
 
-  return (
-    <Card>
-      <CardContent sx={{ textAlign: 'center', '& svg': { mb: 2 } }}>
-        <Icon icon='tabler:3d-cube-sphere' fontSize='2rem' />
-        <Typography variant='h6' sx={{ mb: 4 }}>
-          POC - B1 Evaluation
-        </Typography>
-        <Typography sx={{ mb: 3 }}>
-          This is a proof of concept for the B1 Evaluation. Click the button below to start.
-        </Typography>
-        <Button variant='contained' onClick={() => setShow(true)}>
-          B1 Evaluation
-        </Button>
-      </CardContent>
-      <Dialog
-        fullWidth
-        open={show}
-        scroll='body'
-        maxWidth='md'
-        onClose={handleClose}
-        onBackdropClick={handleClose}
-        TransitionComponent={Transition}
-        sx={{ '& .MuiDialog-paper': { overflow: 'visible' } }}
-      >
-        <DialogContent
-          sx={{
-            pr: theme => [`${theme.spacing(5)} !important`, `${theme.spacing(15)} !important`],
-            pl: theme => [`${theme.spacing(5)} !important`, `${theme.spacing(11)} !important`],
-            py: theme => [`${theme.spacing(8)} !important`, `${theme.spacing(12.5)} !important`]
-          }}
-        >
-          <CustomCloseButton onClick={handleClose}>
-            <Icon icon='tabler:x' fontSize='1.25rem' />
-          </CustomCloseButton>
-          <Box sx={{ mb: 8, textAlign: 'center' }}>
-            <Typography variant='h3' sx={{ mb: 3 }}>
-              B1 - Test
-            </Typography>
-          </Box>
-          <Box sx={{ display: 'flex', flexWrap: { xs: 'wrap', md: 'nowrap' } }}>
-            <TabContext value={activeTab}>
-              <TabList
-                orientation='vertical'
-                onChange={(e, newValue: string) => setActiveTab(newValue)}
-                sx={{
-                  border: 0,
-                  minWidth: 200,
-                  '& .MuiTabs-indicator': { display: 'none' },
-                  '& .MuiTabs-flexContainer': {
-                    alignItems: 'flex-start',
-                    '& .MuiTab-root': {
-                      width: '100%',
-                      alignItems: 'flex-start'
-                    }
-                  }
-                }}
-              >
-                <Tab
-                  disableRipple
-                  value='detailsTab'
-                  label={
-                    <TabLabel
-                      title='Record'
-                      subtitle='Record an audio'
-                      active={activeTab === 'detailsTab'}
-                      icon={<Icon icon='tabler:file-description' />}
-                    />
-                  }
-                />
-                <Tab
-                  disableRipple
-                  value='frameworkTab'
-                  label={
-                    <TabLabel
-                      title='Feedback'
-                      icon={<Icon icon='tabler:3d-cube-sphere' />}
-                      subtitle='See Feedback'
-                      active={activeTab === 'frameworkTab'}
-                    />
-                  }
-                />
-              </TabList>
-              {loading === true && (
-                <CircularProgress
+  useEffect(() => {
+    if (!recorderControls.recordingBlob) return
+    const formData = new FormData()
+    formData.append('file', recorderControls.recordingBlob)
+    handleUpload(formData)
+  }, [recorderControls.recordingBlob])
+
+  useEffect(() => {
+    if (feedback) {
+      speak(feedback)
+    }
+  }, [feedback])
+
+  const handleStartRecording = () => {
+    recorderControls.startRecording()
+    setRecording(true)
+  }
+
+  const handleStopRecording = () => {
+    recorderControls.stopRecording()
+    setRecording(false)
+  }
+
+  const handleRecording = () => {
+    recording ? handleStopRecording() : handleStartRecording()
+  }
+
+  const getStepContent = (step: number) => {
+    switch (step) {
+      case 0:
+        return (
+          <>
+            {[
+              {
+                id: 1,
+                question: 'What you usually do in your free time?',
+                description:
+                  'Talk about your hobbies or what you like to do in your free time, for example: I like to play football, I like to watch movies, I like to read books, etc.'
+              },
+              {
+                id: 2,
+                question: 'Tell me about your family',
+                description: 'Talk about your family, for example: I have a brother and a sister etc..'
+              },
+              {
+                id: 3,
+                question: 'What is your favorite food?',
+                description: 'Talk about your favorite food, for example: I like pizza, I like pasta, etc.'
+              }
+            ].map(item => {
+              return (
+                <Box
                   sx={{
-                    color: 'common.white',
-                    width: '20px !important',
-                    height: '20px !important',
-                    mr: theme => theme.spacing(2)
+                    width: '100%'
                   }}
-                />
-              )}
+                >
+                  <Accordion key={item.id}>
+                    <AccordionSummary expandIcon={<Icon fontSize='1.25rem' icon='tabler:chevron-down' />}>
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          width: '100%'
+                        }}
+                      >
+                        <Typography sx={{ fontWeight: '500' }}>{item.question}</Typography>
+                      </Box>
+                    </AccordionSummary>
+                    <AccordionDetails>
+                      <Typography sx={{ color: 'text.secondary' }}>{item.description}</Typography>
+                    </AccordionDetails>
+                  </Accordion>
+                </Box>
+              )
+            })}
 
-              {loading === false && (
-                <TabPanel value='detailsTab' sx={{ flexGrow: 1, p: '0 !important', mt: [1, 0], minHeight: '500px' }}>
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      minHeight: '200px',
-                      width: '100%',
-                      '& .sound-wave': {
-                        width: '100%',
-                        height: '50px',
-                        backgroundColor: '#FF4081',
-                        borderRadius: '5px'
-                      }
-                    }}
-                  >
-                    <AudioRecorder onRecordingComplete={addAudioElement} recorderControls={recorderControls} />
-                  </Box>
-                  <Button onClick={recorderControls.startRecording} type='button' variant='contained' color='primary'>
-                    Record
-                  </Button>
+            <Box
+              sx={{
+                padding: '1rem',
 
-                  <Button onClick={recorderControls.stopRecording} type='button' variant='contained' color='secondary'>
-                    Stop
-                  </Button>
-                </TabPanel>
-              )}
+                '& > div': {
+                  boxShadow: 'none !important',
+                  backgroundColor: '#fff !important',
+                  display: 'none !important'
+                }
+              }}
+            >
+              <Button
+                onClick={handleRecording}
+                type='button'
+                variant='contained'
+                color={recording ? 'error' : 'primary'}
+              >
+                {recording ? 'Stop Recording' : 'Start Recording'}
+              </Button>
+              <AudioRecorder onRecordingComplete={addAudioElement} recorderControls={recorderControls} />
+            </Box>
+          </>
+        )
+      case 1:
+        return (
+          <>
+            <p>
+              {feedback.split('\n').map((item, key) => {
+                return (
+                  <Fragment key={key}>
+                    {item}
+                    <br />
+                  </Fragment>
+                )
+              })}
+            </p>
+          </>
+        )
+      default:
+        return null
+    }
+  }
 
-              <TabPanel value='frameworkTab' sx={{ flexGrow: 1, p: '0 !important', mt: [6, 0], minHeight: '500px' }}>
-                <p>
-                  {feedback.split('\n').map((item, key) => {
-                    return (
-                      <Fragment key={key}>
-                        {item}
-                        <br />
-                      </Fragment>
-                    )
-                  })}
-                </p>
-                <Button onClick={() => speak(feedback)} type='button' variant='contained' color='secondary'>
-                  Play Feedback
-                </Button>
-                {renderTabFooter()}
-              </TabPanel>
-            </TabContext>
-          </Box>
-        </DialogContent>
-      </Dialog>
+  const renderContent = () => {
+    return getStepContent(activeStep)
+  }
+
+  return (
+    <Card sx={{ display: 'flex', flexDirection: { xs: 'column', lg: 'row' } }}>
+      <StepperHeaderContainer>
+        <StepperWrapper sx={{ height: '100%' }}>
+          <Stepper
+            connector={<></>}
+            orientation='vertical'
+            activeStep={activeStep}
+            sx={{ height: '100%', minWidth: '15rem' }}
+          >
+            {steps.map((step, index) => {
+              const RenderAvatar = activeStep >= index ? CustomAvatar : Avatar
+
+              return (
+                <Step
+                  key={index}
+                  onClick={() => setActiveStep(index)}
+                  sx={{ '&.Mui-completed + svg': { color: 'primary.main' } }}
+                >
+                  <StepLabel>
+                    <div className='step-label'>
+                      <RenderAvatar
+                        variant='rounded'
+                        {...(activeStep >= index && { skin: 'light' })}
+                        {...(activeStep === index && { skin: 'filled' })}
+                        {...(activeStep >= index && { color: 'primary' })}
+                        sx={{
+                          ...(activeStep === index && { boxShadow: theme => theme.shadows[3] }),
+                          ...(activeStep > index && { color: theme => hexToRGBA(theme.palette.primary.main, 0.4) })
+                        }}
+                      >
+                        <Icon icon={step.icon} fontSize='1.5rem' />
+                      </RenderAvatar>
+                      <div>
+                        <Typography className='step-title'>{step.title}</Typography>
+                        <Typography className='step-subtitle'>{step.subtitle}</Typography>
+                      </div>
+                    </div>
+                  </StepLabel>
+                </Step>
+              )
+            })}
+          </Stepper>
+        </StepperWrapper>
+      </StepperHeaderContainer>
+      <CardContent
+        sx={{
+          width: '100%',
+          pt: theme => `${theme.spacing(6)} !important`
+        }}
+      >
+        {renderContent()}
+      </CardContent>
     </Card>
   )
 }
 
-export default DialogCreateApp
+export default PropertyListingWizard
