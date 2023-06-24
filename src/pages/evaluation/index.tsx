@@ -1,8 +1,10 @@
 // ** React Imports
 import { useState, useEffect, Fragment } from 'react'
 import { AudioRecorder, useAudioRecorder } from 'react-audio-voice-recorder'
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 
 // ** MUI Imports
+import ButtonGroup from '@mui/material/ButtonGroup'
 import Box from '@mui/material/Box'
 import Card from '@mui/material/Card'
 import Avatar from '@mui/material/Avatar'
@@ -14,7 +16,6 @@ import { styled } from '@mui/material/styles'
 import MuiStep, { StepProps } from '@mui/material/Step'
 import CardContent, { CardContentProps } from '@mui/material/CardContent'
 import Icon from 'src/@core/components/icon'
-import Accordion from '@mui/material/Accordion'
 import CircularProgress from '@mui/material/CircularProgress'
 // ** Custom Components Imports
 import CustomAvatar from 'src/@core/components/mui/avatar'
@@ -25,15 +26,24 @@ import StepperWrapper from 'src/@core/styles/mui/stepper'
 const steps = [
   {
     icon: 'tabler:file-text',
-    title: 'B1 level',
-    subtitle: 'B1 level test'
+    title: 'Questions',
+    subtitle: 'A1 level questions'
   },
   {
     icon: 'tabler:file-text',
-    subtitle: 'B1 level result',
+    subtitle: 'A1 level evaluation',
     title: 'Evaluation'
   }
 ]
+
+interface LabelProp {
+  cx: number
+  cy: number
+  percent: number
+  midAngle: number
+  innerRadius: number
+  outerRadius: number
+}
 
 const StepperHeaderContainer = styled(CardContent)<CardContentProps>(({ theme }) => ({
   borderRight: `1px solid ${theme.palette.divider}`,
@@ -76,9 +86,17 @@ const PropertyListingWizard = () => {
   const [feedback, setFeedback] = useState('')
   const [evaluationDone, setEvaluationDone] = useState<boolean>(false)
   const [recording, setRecording] = useState<boolean>(false)
-  const [currentIdiom, setCurrentIdiom] = useState<string>('english')
+  const [currentIdiom, setCurrentIdiom] = useState<string>('french')
   const [loading, setLoading] = useState<boolean>(false)
   const [loadingQuestions, setLoadingQuestions] = useState<boolean>(false)
+  const [metrics, setMetrics] = useState('')
+  const [data, setData] = useState([
+    {
+      name: 'Vocabulary',
+      value: 5,
+      color: '#00d4bd'
+    }
+  ])
 
   const [testQuestions, setTestQuestions] = useState('')
 
@@ -87,7 +105,6 @@ const PropertyListingWizard = () => {
     const audio = document.createElement('audio')
     audio.src = url
     audio.controls = true
-    document.body.appendChild(audio)
   }
 
   const recorderControls = useAudioRecorder()
@@ -147,16 +164,52 @@ const PropertyListingWizard = () => {
     }
   }
 
-  useEffect(() => {
-    if (feedback) {
-      speak(feedback)
+  const GenerateMetrics = async () => {
+    const formData = new FormData()
+    formData.append(
+      'text',
+      `generate a JSON object with the metrics for this feedback: ${feedback} only return the json object with the metrics and not the feedback itself just the metrics in this format  [
+        { name: 'Vocabulary', value: 5, color: '#00d4bd' },
+        { name: 'Comprehension', value: 8, color: '#ff5c7c' },
+        { name: 'Grammar', value: 10, color: '#ffa900' },
+        { name: 'Fluency', value: 10, color: '#0abb87' }
+      ]`
+    )
+
+    const result = await fetch('http://0.0.0.0:5000/v2/generate-text', {
+      method: 'POST',
+      mode: 'cors',
+      headers: {
+        Accept: 'application/json'
+      },
+      body: formData
+    })
+
+    const data = await result.json()
+    const metrics = data?.choices[0].message.content
+
+    if (metrics) {
+      const contentLines = metrics.split('\n').filter((line: any) => line.includes('name'))
+
+      const parsedData = contentLines.map((line: any) => {
+        const name = line.match(/'([^']*)'/)[1]
+        const value = parseInt(line.match(/value: (\d+)/)[1])
+        const colors = ['#11009E', '#4942E4', '#8696FE', '#C4B0FF']
+
+        const color = colors[Math.floor(Math.random() * colors.length)] // Assign random color
+
+        return { name, value, color }
+      })
+
+      setData(parsedData)
     }
-  }, [feedback])
+  }
 
   useEffect(() => {
     if (feedback) {
-      speak(feedback)
       setActiveStep(prevStep => prevStep + 1) // Auto-advance to the next step
+      speak(feedback)
+      GenerateMetrics()
     }
   }, [feedback])
 
@@ -213,6 +266,23 @@ const PropertyListingWizard = () => {
     recording ? handleStopRecording() : handleStartRecording()
   }
 
+  const RADIAN = Math.PI / 180
+
+  const renderCustomizedLabel = (props: LabelProp) => {
+    // ** Props
+    const { cx, cy, midAngle, innerRadius, outerRadius, percent } = props
+
+    const radius = innerRadius + (outerRadius - innerRadius) * 0.5
+    const x = cx + radius * Math.cos(-midAngle * RADIAN)
+    const y = cy + radius * Math.sin(-midAngle * RADIAN)
+
+    return (
+      <text x={x} y={y} fill='#fff' textAnchor='middle' dominantBaseline='central'>
+        {`${(percent * 100).toFixed(0)}%`}
+      </text>
+    )
+  }
+
   const getStepContent = (step: number) => {
     switch (step) {
       case 0:
@@ -223,24 +293,59 @@ const PropertyListingWizard = () => {
             }}
           >
             {!loadingQuestions && (
-              <p>
-                {testQuestions.split('\n').map((item, key) => {
-                  return (
-                    <Fragment key={key}>
-                      {item}
-                      <br />
-                    </Fragment>
-                  )
-                })}
-              </p>
+              <>
+                <p>
+                  {testQuestions.split('\n').map((item, key) => {
+                    return (
+                      <Fragment key={key}>
+                        {item}
+                        <br />
+                      </Fragment>
+                    )
+                  })}
+                </p>
+
+                <ButtonGroup variant='outlined'>
+                  <Button
+                    onClick={handleRecording}
+                    type='button'
+                    variant='contained'
+                    color={recording ? 'error' : 'primary'}
+                  >
+                    {recording ? 'Stop Recording' : 'Start Recording'}
+                  </Button>
+
+                  <Button
+                    sx={{
+                      marginLeft: '10px'
+                    }}
+                    onClick={() => {}}
+                    type='button'
+                    variant='contained'
+                    color='success'
+                  >
+                    Upload Recording
+                  </Button>
+                </ButtonGroup>
+              </>
             )}
 
-            {loadingQuestions && <p>Generating test questions...</p>}
+            {loadingQuestions && (
+              <Box
+                sx={{
+                  width: '100%',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
+                }}
+              >
+                <p>Generating test questions...</p>
+                <CircularProgress size={25} />
+              </Box>
+            )}
 
             <Box
               sx={{
-                padding: '1rem',
-
                 '& > div': {
                   boxShadow: 'none !important',
                   backgroundColor: '#fff !important',
@@ -248,14 +353,6 @@ const PropertyListingWizard = () => {
                 }
               }}
             >
-              <Button
-                onClick={handleRecording}
-                type='button'
-                variant='contained'
-                color={recording ? 'error' : 'primary'}
-              >
-                {recording ? 'Stop Recording' : 'Start Recording'}
-              </Button>
               <AudioRecorder onRecordingComplete={addAudioElement} recorderControls={recorderControls} />
             </Box>
           </Box>
@@ -264,19 +361,36 @@ const PropertyListingWizard = () => {
         return (
           <>
             {feedback && (
-              <p>
-                {feedback.split('\n').map((item, key) => {
-                  return (
-                    <Fragment key={key}>
-                      {item}
-                      <br />
-                    </Fragment>
-                  )
-                })}
-              </p>
+              <>
+                <p>
+                  {feedback.split('\n').map((item, key) => {
+                    return (
+                      <>
+                        <Fragment key={key}>
+                          {item}
+                          <br />
+                        </Fragment>
+                      </>
+                    )
+                  })}
+                </p>
+
+                <Box sx={{ height: 350 }}>
+                  <ResponsiveContainer>
+                    <PieChart height={350} style={{ direction: 'ltr' }}>
+                      <Pie data={data} innerRadius={80} dataKey='value' label={renderCustomizedLabel} labelLine={false}>
+                        {data.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </Box>
+              </>
             )}
 
-            {!feedback && <p>Await the answers to be evaluated...</p>}
+            {!feedback && <p>Record and audio resolving the questions to process/show your evaluation 😄 📖</p>}
           </>
         )
       default:
@@ -342,13 +456,14 @@ const PropertyListingWizard = () => {
         {loading ? (
           <Box
             sx={{
+              width: '100%',
               display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              height: '100%'
+              justifyContent: 'space-between',
+              alignItems: 'center'
             }}
           >
-            <CircularProgress />
+            <p>Processing Evaluation...</p>
+            <CircularProgress size={25} />
           </Box>
         ) : (
           renderContent()

@@ -13,10 +13,10 @@ const navigation = (): HorizontalNavItemsType => [
     icon: 'tabler:users'
   },
   {
-    path: '/assessments',
+    path: '/evaluation',
     action: 'read',
     subject: 'acl-page',
-    title: 'Assessments',
+    title: 'Evaluation',
     icon: 'tabler:file-text'
   }
 ]
