@@ -1,29 +1,20 @@
-// ** React Imports
 import { useState, useEffect, Fragment } from 'react'
 import { AudioRecorder, useAudioRecorder } from 'react-audio-voice-recorder'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
-
-// ** MUI Imports
-import ButtonGroup from '@mui/material/ButtonGroup'
-import Box from '@mui/material/Box'
-import Card from '@mui/material/Card'
-import Avatar from '@mui/material/Avatar'
-import Button from '@mui/material/Button'
-import Stepper from '@mui/material/Stepper'
-import StepLabel from '@mui/material/StepLabel'
-import Typography from '@mui/material/Typography'
+import { ButtonGroup, Box, Card, Avatar, Button, Stepper, StepLabel, Typography, CircularProgress } from '@mui/material'
+import CustomAvatar from 'src/@core/components/mui/avatar'
 import { styled } from '@mui/material/styles'
 import MuiStep, { StepProps } from '@mui/material/Step'
 import CardContent, { CardContentProps } from '@mui/material/CardContent'
 import Icon from 'src/@core/components/icon'
-import CircularProgress from '@mui/material/CircularProgress'
-// ** Custom Components Imports
-import CustomAvatar from 'src/@core/components/mui/avatar'
 
 import { hexToRGBA } from 'src/@core/utils/hex-to-rgba'
 import StepperWrapper from 'src/@core/styles/mui/stepper'
 
-const steps = [
+import { EvaluationsApi } from '../../resources'
+import { VoiceAssistant } from '../../utils'
+
+const STEPS = [
   {
     icon: 'tabler:file-text',
     title: 'Questions',
@@ -81,15 +72,12 @@ const Step = styled(MuiStep)<StepProps>(({ theme }) => ({
 }))
 
 const PropertyListingWizard = () => {
-  // ** States
   const [activeStep, setActiveStep] = useState<number>(0)
   const [feedback, setFeedback] = useState('')
-  const [evaluationDone, setEvaluationDone] = useState<boolean>(false)
   const [recording, setRecording] = useState<boolean>(false)
-  const [currentIdiom, setCurrentIdiom] = useState<string>('french')
+  const [currentIdiom, setCurrentIdiom] = useState<string>('spanish')
   const [loading, setLoading] = useState<boolean>(false)
   const [loadingQuestions, setLoadingQuestions] = useState<boolean>(false)
-  const [metrics, setMetrics] = useState('')
   const [data, setData] = useState([
     {
       name: 'Vocabulary',
@@ -100,161 +88,21 @@ const PropertyListingWizard = () => {
 
   const [testQuestions, setTestQuestions] = useState('')
 
+  const { get_metrics, create_evaluation, create_questions } = EvaluationsApi()
+  const { speak } = VoiceAssistant()
+
+  const recorderControls = useAudioRecorder()
+
   const addAudioElement = (blob: any) => {
     const url = URL.createObjectURL(blob)
     const audio = document.createElement('audio')
     audio.src = url
     audio.controls = true
   }
-
-  const recorderControls = useAudioRecorder()
-
-  const handleUpload = async (formData: FormData) => {
-    const result = await fetch('http://0.0.0.0:5000/v2/evaluate-speech', {
-      method: 'POST',
-      mode: 'cors',
-      headers: {
-        Accept: 'application/json'
-      },
-      body: formData
-    })
-    const data = await result.json()
-    const completionMessage = data?.text.choices[0].message.content
-
-    if (completionMessage) {
-      setFeedback(completionMessage)
-      setCurrentIdiom(data?.language)
-      setEvaluationDone(true)
-      setLoading(false)
-    }
-  }
-
-  const speak = (text: any) => {
-    const utterance = new SpeechSynthesisUtterance(text)
-    speechSynthesis.onvoiceschanged = () => {
-      const voices = window.speechSynthesis.getVoices()
-
-      var idiom = ''
-
-      if (currentIdiom === 'english') {
-        idiom = 'Eddy (English (US))'
-      }
-
-      if (currentIdiom === 'spanish') {
-        idiom = 'Grandma (Spanish (Mexico))'
-      }
-
-      if (currentIdiom === 'french') {
-        idiom = 'Grandpa (French (Canada))'
-      }
-
-      console.log(voices)
-
-      const matchedVoice = voices.find(voice => voice.name === idiom)
-
-      if (matchedVoice) {
-        utterance.voice = matchedVoice
-      }
-
-      utterance.volume = 1 // Full volume
-      utterance.rate = 0.8 // Normal speed
-      utterance.pitch = 1 // Normal pitch
-
-      speechSynthesis.speak(utterance)
-    }
-  }
-
-  const GenerateMetrics = async () => {
-    const formData = new FormData()
-    formData.append(
-      'text',
-      `generate a JSON object with the metrics for this feedback: ${feedback} only return the json object with the metrics and not the feedback itself just the metrics in this format  [
-        { name: 'Vocabulary', value: 5, color: '#00d4bd' },
-        { name: 'Comprehension', value: 8, color: '#ff5c7c' },
-        { name: 'Grammar', value: 10, color: '#ffa900' },
-        { name: 'Fluency', value: 10, color: '#0abb87' }
-      ]`
-    )
-
-    const result = await fetch('http://0.0.0.0:5000/v2/generate-text', {
-      method: 'POST',
-      mode: 'cors',
-      headers: {
-        Accept: 'application/json'
-      },
-      body: formData
-    })
-
-    const data = await result.json()
-    const metrics = data?.choices[0].message.content
-
-    if (metrics) {
-      const contentLines = metrics.split('\n').filter((line: any) => line.includes('name'))
-
-      const parsedData = contentLines.map((line: any) => {
-        const name = line.match(/'([^']*)'/)[1]
-        const value = parseInt(line.match(/value: (\d+)/)[1])
-        const colors = ['#11009E', '#4942E4', '#8696FE', '#C4B0FF']
-
-        const color = colors[Math.floor(Math.random() * colors.length)] // Assign random color
-
-        return { name, value, color }
-      })
-
-      setData(parsedData)
-    }
-  }
-
-  useEffect(() => {
-    if (feedback) {
-      setActiveStep(prevStep => prevStep + 1) // Auto-advance to the next step
-      speak(feedback)
-      GenerateMetrics()
-    }
-  }, [feedback])
-
-  useEffect(() => {
-    if (recorderControls.recordingBlob) {
-      const formData = new FormData()
-      formData.append('file', recorderControls.recordingBlob)
-      formData.append('questions', testQuestions)
-      handleUpload(formData)
-    }
-  }, [recorderControls.recordingBlob])
-
   const handleStartRecording = () => {
     recorderControls.startRecording()
     setRecording(true)
   }
-
-  const generateTestQuestions = async () => {
-    const formData = new FormData()
-    formData.append(
-      'text',
-      `B1 level test questions for ${currentIdiom} within 3 questions. Focus on grammar and vocabulary, and consider the user can only respond via audio recordings so don't request edit tasks.`
-    )
-
-    const result = await fetch('http://0.0.0.0:5000/v2/generate-text', {
-      method: 'POST',
-      mode: 'cors',
-      headers: {
-        Accept: 'application/json'
-      },
-      body: formData
-    })
-    const data = await result.json()
-    const completionMessage = data?.choices[0].message.content
-
-    if (completionMessage) {
-      setTestQuestions(completionMessage)
-      setLoadingQuestions(false)
-    }
-  }
-
-  useEffect(() => {
-    setLoadingQuestions(true)
-    generateTestQuestions()
-  }, [])
 
   const handleStopRecording = async () => {
     recorderControls.stopRecording()
@@ -266,10 +114,58 @@ const PropertyListingWizard = () => {
     recording ? handleStopRecording() : handleStartRecording()
   }
 
-  const RADIAN = Math.PI / 180
+  const HandleEvaluation = async () => {
+    if (feedback) {
+      setActiveStep(prevStep => prevStep + 1)
+      speak(feedback, currentIdiom)
+      const result = await get_metrics({
+        data: `generate a JSON object with the metrics for this feedback: ${feedback} only return the json object with the metrics and not the feedback itself just the metrics in this format  [
+          { name: 'Vocabulary', value: 5, color: '#00d4bd' },
+          { name: 'Comprehension', value: 8, color: '#ff5c7c' },
+          { name: 'Grammar', value: 10, color: '#ffa900' },
+          { name: 'Fluency', value: 10, color: '#0abb87' }
+        ]`
+      })
+      setData(result)
+    }
+  }
+
+  const CreateEvaluation = async () => {
+    if (recorderControls.recordingBlob) {
+      const evaluation = await create_evaluation({ audio: recorderControls.recordingBlob, questions: testQuestions })
+      if (evaluation) {
+        setFeedback(evaluation?.feedback)
+        setCurrentIdiom(evaluation?.language)
+        setLoading(false)
+      }
+    }
+  }
+
+  const generateTestQuestions = async () => {
+    const completionMessage = await create_questions({
+      questions: `B1 level test questions for ${currentIdiom} within 3 questions. Focus on grammar and vocabulary, and consider the user can only respond via audio recordings so don't request edit tasks.`
+    })
+    if (completionMessage) {
+      setTestQuestions(completionMessage)
+      setLoadingQuestions(false)
+    }
+  }
+
+  useEffect(() => {
+    HandleEvaluation()
+  }, [feedback])
+
+  useEffect(() => {
+    CreateEvaluation()
+  }, [recorderControls.recordingBlob])
+
+  useEffect(() => {
+    setLoadingQuestions(true)
+    generateTestQuestions()
+  }, [])
 
   const renderCustomizedLabel = (props: LabelProp) => {
-    // ** Props
+    const RADIAN = Math.PI / 180
     const { cx, cy, midAngle, innerRadius, outerRadius, percent } = props
 
     const radius = innerRadius + (outerRadius - innerRadius) * 0.5
@@ -412,7 +308,7 @@ const PropertyListingWizard = () => {
             activeStep={activeStep}
             sx={{ height: '100%', minWidth: '15rem' }}
           >
-            {steps.map((step, index) => {
+            {STEPS.map((step, index) => {
               const RenderAvatar = activeStep >= index ? CustomAvatar : Avatar
 
               return (
