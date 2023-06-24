@@ -10,14 +10,12 @@ import Button from '@mui/material/Button'
 import Stepper from '@mui/material/Stepper'
 import StepLabel from '@mui/material/StepLabel'
 import Typography from '@mui/material/Typography'
-import { styled, useTheme } from '@mui/material/styles'
+import { styled } from '@mui/material/styles'
 import MuiStep, { StepProps } from '@mui/material/Step'
 import CardContent, { CardContentProps } from '@mui/material/CardContent'
-import AccordionSummary from '@mui/material/AccordionSummary'
-import AccordionDetails from '@mui/material/AccordionDetails'
 import Icon from 'src/@core/components/icon'
 import Accordion from '@mui/material/Accordion'
-
+import CircularProgress from '@mui/material/CircularProgress'
 // ** Custom Components Imports
 import CustomAvatar from 'src/@core/components/mui/avatar'
 
@@ -78,7 +76,11 @@ const PropertyListingWizard = () => {
   const [feedback, setFeedback] = useState('')
   const [evaluationDone, setEvaluationDone] = useState<boolean>(false)
   const [recording, setRecording] = useState<boolean>(false)
-  const [currentIdiom, setCurrentIdiom] = useState<string>('')
+  const [currentIdiom, setCurrentIdiom] = useState<string>('english')
+  const [loading, setLoading] = useState<boolean>(false)
+  const [loadingQuestions, setLoadingQuestions] = useState<boolean>(false)
+
+  const [testQuestions, setTestQuestions] = useState('')
 
   const addAudioElement = (blob: any) => {
     const url = URL.createObjectURL(blob)
@@ -91,7 +93,7 @@ const PropertyListingWizard = () => {
   const recorderControls = useAudioRecorder()
 
   const handleUpload = async (formData: FormData) => {
-    const result = await fetch('http://0.0.0.0:5000/v2/generate_text', {
+    const result = await fetch('http://0.0.0.0:5000/v2/evaluate-speech', {
       method: 'POST',
       mode: 'cors',
       headers: {
@@ -106,6 +108,7 @@ const PropertyListingWizard = () => {
       setFeedback(completionMessage)
       setCurrentIdiom(data?.language)
       setEvaluationDone(true)
+      setLoading(false)
     }
   }
 
@@ -145,26 +148,65 @@ const PropertyListingWizard = () => {
   }
 
   useEffect(() => {
-    if (!recorderControls.recordingBlob) return
-    const formData = new FormData()
-    formData.append('file', recorderControls.recordingBlob)
-    handleUpload(formData)
-  }, [recorderControls.recordingBlob])
-
-  useEffect(() => {
     if (feedback) {
       speak(feedback)
     }
   }, [feedback])
+
+  useEffect(() => {
+    if (feedback) {
+      speak(feedback)
+      setActiveStep(prevStep => prevStep + 1) // Auto-advance to the next step
+    }
+  }, [feedback])
+
+  useEffect(() => {
+    if (recorderControls.recordingBlob) {
+      const formData = new FormData()
+      formData.append('file', recorderControls.recordingBlob)
+      formData.append('questions', testQuestions)
+      handleUpload(formData)
+    }
+  }, [recorderControls.recordingBlob])
 
   const handleStartRecording = () => {
     recorderControls.startRecording()
     setRecording(true)
   }
 
-  const handleStopRecording = () => {
+  const generateTestQuestions = async () => {
+    const formData = new FormData()
+    formData.append(
+      'text',
+      `B1 level test questions for ${currentIdiom} within 3 questions. Focus on grammar and vocabulary, and consider the user can only respond via audio recordings so don't request edit tasks.`
+    )
+
+    const result = await fetch('http://0.0.0.0:5000/v2/generate-text', {
+      method: 'POST',
+      mode: 'cors',
+      headers: {
+        Accept: 'application/json'
+      },
+      body: formData
+    })
+    const data = await result.json()
+    const completionMessage = data?.choices[0].message.content
+
+    if (completionMessage) {
+      setTestQuestions(completionMessage)
+      setLoadingQuestions(false)
+    }
+  }
+
+  useEffect(() => {
+    setLoadingQuestions(true)
+    generateTestQuestions()
+  }, [])
+
+  const handleStopRecording = async () => {
     recorderControls.stopRecording()
     setRecording(false)
+    setLoading(true)
   }
 
   const handleRecording = () => {
@@ -175,51 +217,25 @@ const PropertyListingWizard = () => {
     switch (step) {
       case 0:
         return (
-          <>
-            {[
-              {
-                id: 1,
-                question: 'What you usually do in your free time?',
-                description:
-                  'Talk about your hobbies or what you like to do in your free time, for example: I like to play football, I like to watch movies, I like to read books, etc.'
-              },
-              {
-                id: 2,
-                question: 'Tell me about your family',
-                description: 'Talk about your family, for example: I have a brother and a sister etc..'
-              },
-              {
-                id: 3,
-                question: 'What is your favorite food?',
-                description: 'Talk about your favorite food, for example: I like pizza, I like pasta, etc.'
-              }
-            ].map(item => {
-              return (
-                <Box
-                  sx={{
-                    width: '100%'
-                  }}
-                >
-                  <Accordion key={item.id}>
-                    <AccordionSummary expandIcon={<Icon fontSize='1.25rem' icon='tabler:chevron-down' />}>
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          width: '100%'
-                        }}
-                      >
-                        <Typography sx={{ fontWeight: '500' }}>{item.question}</Typography>
-                      </Box>
-                    </AccordionSummary>
-                    <AccordionDetails>
-                      <Typography sx={{ color: 'text.secondary' }}>{item.description}</Typography>
-                    </AccordionDetails>
-                  </Accordion>
-                </Box>
-              )
-            })}
+          <Box
+            sx={{
+              width: '100%'
+            }}
+          >
+            {!loadingQuestions && (
+              <p>
+                {testQuestions.split('\n').map((item, key) => {
+                  return (
+                    <Fragment key={key}>
+                      {item}
+                      <br />
+                    </Fragment>
+                  )
+                })}
+              </p>
+            )}
+
+            {loadingQuestions && <p>Generating test questions...</p>}
 
             <Box
               sx={{
@@ -242,21 +258,25 @@ const PropertyListingWizard = () => {
               </Button>
               <AudioRecorder onRecordingComplete={addAudioElement} recorderControls={recorderControls} />
             </Box>
-          </>
+          </Box>
         )
       case 1:
         return (
           <>
-            <p>
-              {feedback.split('\n').map((item, key) => {
-                return (
-                  <Fragment key={key}>
-                    {item}
-                    <br />
-                  </Fragment>
-                )
-              })}
-            </p>
+            {feedback && (
+              <p>
+                {feedback.split('\n').map((item, key) => {
+                  return (
+                    <Fragment key={key}>
+                      {item}
+                      <br />
+                    </Fragment>
+                  )
+                })}
+              </p>
+            )}
+
+            {!feedback && <p>Await the answers to be evaluated...</p>}
           </>
         )
       default:
@@ -319,7 +339,20 @@ const PropertyListingWizard = () => {
           pt: theme => `${theme.spacing(6)} !important`
         }}
       >
-        {renderContent()}
+        {loading ? (
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '100%'
+            }}
+          >
+            <CircularProgress />
+          </Box>
+        ) : (
+          renderContent()
+        )}
       </CardContent>
     </Card>
   )
