@@ -8,15 +8,21 @@ const navigation = (): HorizontalNavItemsType => [
     icon: 'tabler:chart-pie'
   },
   {
+    title: 'Teachers',
+    path: '/',
+    icon: 'tabler:users'
+  },
+  {
     title: 'Students',
     path: '/students',
     icon: 'tabler:users'
   },
+
   {
     path: '/evaluation',
     action: 'read',
     subject: 'acl-page',
-    title: 'Evaluation',
+    title: 'Evaluations',
     icon: 'tabler:file-text'
   }
 ]

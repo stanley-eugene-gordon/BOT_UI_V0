@@ -75,7 +75,7 @@ const PropertyListingWizard = () => {
   const [activeStep, setActiveStep] = useState<number>(0)
   const [feedback, setFeedback] = useState('')
   const [recording, setRecording] = useState<boolean>(false)
-  const [currentIdiom, setCurrentIdiom] = useState<string>('spanish')
+  const [currentIdiom, setCurrentIdiom] = useState<string>('english')
   const [loading, setLoading] = useState<boolean>(false)
   const [loadingQuestions, setLoadingQuestions] = useState<boolean>(false)
   const [data, setData] = useState([
