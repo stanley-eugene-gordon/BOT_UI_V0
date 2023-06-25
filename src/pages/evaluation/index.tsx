@@ -238,7 +238,12 @@ const PropertyListingWizard = () => {
               >
                 {loadingQuestions && !currentIdiom && <p>Waiting for the user to select a language..</p>}
                 {loadingQuestions && currentIdiom && <p>Generating test questions for {currentIdiom}...</p>}
-                <CircularProgress size={25} />
+                <img
+                  src='https://i.pinimg.com/originals/11/25/70/112570d82b10188b1aaf2664c879e7b1.gif'
+                  alt='loading'
+                  width={70}
+                  height={60}
+                />
               </Box>
             )}
 
