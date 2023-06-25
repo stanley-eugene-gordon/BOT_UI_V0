@@ -23,19 +23,6 @@ const BoxWrapper = styled(Box)<BoxProps>(({ theme }) => ({
   }
 }))
 
-const Img = styled('img')(({ theme }) => ({
-  [theme.breakpoints.down('lg')]: {
-    height: 450,
-    marginTop: theme.spacing(10)
-  },
-  [theme.breakpoints.down('md')]: {
-    height: 400
-  },
-  [theme.breakpoints.up('lg')]: {
-    marginTop: theme.spacing(20)
-  }
-}))
-
 const Error401 = () => {
   return (
     <Box className='content-center'>

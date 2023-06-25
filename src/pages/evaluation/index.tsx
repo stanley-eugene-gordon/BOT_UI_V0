@@ -215,7 +215,6 @@ const PropertyListingWizard = () => {
                     sx={{
                       marginLeft: '10px'
                     }}
-                    onClick={() => {}}
                     type='button'
                     variant='contained'
                     color='success'

@@ -30,7 +30,6 @@ import { yupResolver } from '@hookform/resolvers/yup'
 // ** Hooks
 import { useAuth } from 'src/hooks/useAuth'
 import useBgColor from 'src/@core/hooks/useBgColor'
-import { useSettings } from 'src/@core/hooks/useSettings'
 
 // ** Configs
 import themeConfig from 'src/configs/themeConfig'
@@ -39,21 +38,8 @@ import themeConfig from 'src/configs/themeConfig'
 import BlankLayout from 'src/@core/layouts/BlankLayout'
 
 // ** Demo Imports
-import FooterIllustrationsV2 from 'src/views/pages/auth/FooterIllustrationsV2'
 
 // ** Styled Components
-const LoginIllustration = styled('img')(({ theme }) => ({
-  zIndex: 2,
-  maxHeight: 680,
-  marginTop: theme.spacing(12),
-  marginBottom: theme.spacing(12),
-  [theme.breakpoints.down(1540)]: {
-    maxHeight: 550
-  },
-  [theme.breakpoints.down('lg')]: {
-    maxHeight: 500
-  }
-}))
 
 const RightWrapper = styled(Box)<BoxProps>(({ theme }) => ({
   width: '100%',
@@ -102,7 +88,6 @@ const LoginPage = () => {
   const auth = useAuth()
   const theme = useTheme()
   const bgColors = useBgColor()
-  const { settings } = useSettings()
   const hidden = useMediaQuery(theme.breakpoints.down('md'))
 
   const {

@@ -11,7 +11,6 @@ import Badge from '@mui/material/Badge'
 import Avatar from '@mui/material/Avatar'
 import Divider from '@mui/material/Divider'
 import { styled } from '@mui/material/styles'
-import Typography from '@mui/material/Typography'
 import MenuItem, { MenuItemProps } from '@mui/material/MenuItem'
 
 // ** Icon Imports

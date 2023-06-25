@@ -15,6 +15,7 @@ function apiRequest() {
         body,
         headers: { ...headers }
       })
+
       return response
     } catch (error) {
       throw new Error(`${error}`)

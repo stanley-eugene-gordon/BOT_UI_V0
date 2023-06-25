@@ -25,24 +25,6 @@ import Icon from 'src/@core/components/icon'
 import BlankLayout from 'src/@core/layouts/BlankLayout'
 
 // ** Hooks
-import { useSettings } from 'src/@core/hooks/useSettings'
-
-// ** Demo Imports
-import FooterIllustrationsV2 from 'src/views/pages/auth/FooterIllustrationsV2'
-
-// ** Styled Components
-const RegisterIllustration = styled('img')(({ theme }) => ({
-  zIndex: 2,
-  maxHeight: 600,
-  marginTop: theme.spacing(12),
-  marginBottom: theme.spacing(12),
-  [theme.breakpoints.down(1540)]: {
-    maxHeight: 550
-  },
-  [theme.breakpoints.down('lg')]: {
-    maxHeight: 500
-  }
-}))
 
 const RightWrapper = styled(Box)<BoxProps>(({ theme }) => ({
   width: '100%',
