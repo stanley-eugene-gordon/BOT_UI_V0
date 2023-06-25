@@ -75,7 +75,7 @@ const PropertyListingWizard = () => {
   const [activeStep, setActiveStep] = useState<number>(0)
   const [feedback, setFeedback] = useState('')
   const [recording, setRecording] = useState<boolean>(false)
-  const [currentIdiom, setCurrentIdiom] = useState<string>('english')
+  const [currentIdiom, setCurrentIdiom] = useState<string>('')
   const [loading, setLoading] = useState<boolean>(false)
   const [loadingQuestions, setLoadingQuestions] = useState<boolean>(false)
   const [data, setData] = useState([
@@ -142,12 +142,14 @@ const PropertyListingWizard = () => {
   }
 
   const generateTestQuestions = async () => {
-    const completionMessage = await create_questions({
-      questions: `B1 level test questions for ${currentIdiom} within 3 questions. Focus on grammar and vocabulary, and consider the user can only respond via audio recordings so don't request edit tasks.`
-    })
-    if (completionMessage) {
-      setTestQuestions(completionMessage)
-      setLoadingQuestions(false)
+    if (currentIdiom) {
+      const completionMessage = await create_questions({
+        questions: `B1 level test questions for ${currentIdiom} within 3 questions. Focus on grammar and vocabulary, and consider the user can only respond via audio recordings so don't request edit tasks.`
+      })
+      if (completionMessage) {
+        setTestQuestions(completionMessage)
+        setLoadingQuestions(false)
+      }
     }
   }
 
@@ -162,7 +164,7 @@ const PropertyListingWizard = () => {
   useEffect(() => {
     setLoadingQuestions(true)
     generateTestQuestions()
-  }, [])
+  }, [currentIdiom])
 
   const renderCustomizedLabel = (props: LabelProp) => {
     const RADIAN = Math.PI / 180
@@ -234,7 +236,8 @@ const PropertyListingWizard = () => {
                   alignItems: 'center'
                 }}
               >
-                <p>Generating test questions...</p>
+                {loadingQuestions && !currentIdiom && <p>Waiting for the user to select a language..</p>}
+                {loadingQuestions && currentIdiom && <p>Generating test questions for {currentIdiom}...</p>}
                 <CircularProgress size={25} />
               </Box>
             )}
@@ -298,73 +301,122 @@ const PropertyListingWizard = () => {
   }
 
   return (
-    <Card sx={{ display: 'flex', flexDirection: { xs: 'column', lg: 'row' } }}>
-      <StepperHeaderContainer>
-        <StepperWrapper sx={{ height: '100%' }}>
-          <Stepper
-            connector={<></>}
-            orientation='vertical'
-            activeStep={activeStep}
-            sx={{ height: '100%', minWidth: '15rem' }}
-          >
-            {STEPS.map((step, index) => {
-              const RenderAvatar = activeStep >= index ? CustomAvatar : Avatar
+    <>
+      <ButtonGroup variant='outlined'>
+        <Button
+          onClick={() => {
+            setCurrentIdiom('english')
+            setLoadingQuestions(true)
+            generateTestQuestions()
+          }}
+          type='button'
+          variant='contained'
+          color={'error'}
+        >
+          English
+        </Button>
 
-              return (
-                <Step
-                  key={index}
-                  onClick={() => setActiveStep(index)}
-                  sx={{ '&.Mui-completed + svg': { color: 'primary.main' } }}
-                >
-                  <StepLabel>
-                    <div className='step-label'>
-                      <RenderAvatar
-                        variant='rounded'
-                        {...(activeStep >= index && { skin: 'light' })}
-                        {...(activeStep === index && { skin: 'filled' })}
-                        {...(activeStep >= index && { color: 'primary' })}
-                        sx={{
-                          ...(activeStep === index && { boxShadow: theme => theme.shadows[3] }),
-                          ...(activeStep > index && { color: theme => hexToRGBA(theme.palette.primary.main, 0.4) })
-                        }}
-                      >
-                        <Icon icon={step.icon} fontSize='1.5rem' />
-                      </RenderAvatar>
-                      <div>
-                        <Typography className='step-title'>{step.title}</Typography>
-                        <Typography className='step-subtitle'>{step.subtitle}</Typography>
+        <Button
+          sx={{
+            marginLeft: '10px'
+          }}
+          type='button'
+          variant='contained'
+          color='warning'
+          onClick={() => {
+            setCurrentIdiom('spanish')
+            setLoadingQuestions(true)
+            generateTestQuestions()
+          }}
+        >
+          Spanish
+        </Button>
+
+        <Button
+          sx={{
+            marginLeft: '10px'
+          }}
+          type='button'
+          variant='contained'
+          color='success'
+          onClick={() => {
+            setCurrentIdiom('french')
+            setLoadingQuestions(true)
+            generateTestQuestions()
+          }}
+        >
+          French
+        </Button>
+      </ButtonGroup>
+
+      <Card sx={{ display: 'flex', flexDirection: { xs: 'column', lg: 'row' } }}>
+        <StepperHeaderContainer>
+          <StepperWrapper sx={{ height: '100%' }}>
+            <Stepper
+              connector={<></>}
+              orientation='vertical'
+              activeStep={activeStep}
+              sx={{ height: '100%', minWidth: '15rem' }}
+            >
+              {STEPS.map((step, index) => {
+                const RenderAvatar = activeStep >= index ? CustomAvatar : Avatar
+
+                return (
+                  <Step
+                    key={index}
+                    onClick={() => setActiveStep(index)}
+                    sx={{ '&.Mui-completed + svg': { color: 'primary.main' } }}
+                  >
+                    <StepLabel>
+                      <div className='step-label'>
+                        <RenderAvatar
+                          variant='rounded'
+                          {...(activeStep >= index && { skin: 'light' })}
+                          {...(activeStep === index && { skin: 'filled' })}
+                          {...(activeStep >= index && { color: 'primary' })}
+                          sx={{
+                            ...(activeStep === index && { boxShadow: theme => theme.shadows[3] }),
+                            ...(activeStep > index && { color: theme => hexToRGBA(theme.palette.primary.main, 0.4) })
+                          }}
+                        >
+                          <Icon icon={step.icon} fontSize='1.5rem' />
+                        </RenderAvatar>
+                        <div>
+                          <Typography className='step-title'>{step.title}</Typography>
+                          <Typography className='step-subtitle'>{step.subtitle}</Typography>
+                        </div>
                       </div>
-                    </div>
-                  </StepLabel>
-                </Step>
-              )
-            })}
-          </Stepper>
-        </StepperWrapper>
-      </StepperHeaderContainer>
-      <CardContent
-        sx={{
-          width: '100%',
-          pt: theme => `${theme.spacing(6)} !important`
-        }}
-      >
-        {loading ? (
-          <Box
-            sx={{
-              width: '100%',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center'
-            }}
-          >
-            <p>Processing Evaluation...</p>
-            <CircularProgress size={25} />
-          </Box>
-        ) : (
-          renderContent()
-        )}
-      </CardContent>
-    </Card>
+                    </StepLabel>
+                  </Step>
+                )
+              })}
+            </Stepper>
+          </StepperWrapper>
+        </StepperHeaderContainer>
+        <CardContent
+          sx={{
+            width: '100%',
+            pt: theme => `${theme.spacing(6)} !important`
+          }}
+        >
+          {loading ? (
+            <Box
+              sx={{
+                width: '100%',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+              }}
+            >
+              <p>Processing Evaluation...</p>
+              <CircularProgress size={25} />
+            </Box>
+          ) : (
+            renderContent()
+          )}
+        </CardContent>
+      </Card>
+    </>
   )
 }
 
