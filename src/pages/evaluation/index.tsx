@@ -294,6 +294,16 @@ const PropertyListingWizard = () => {
             )}
 
             {!feedback && <p>Record and audio resolving the questions to process/show your evaluation 😄 📖</p>}
+            {feedback && (
+              <>
+                <img
+                  src='https://images.openai.com/blob/18ff9c06-7853-4e3b-946f-508f0cd7ed13/asr-details-desktop.svg?width=10&height=10&quality=50'
+                  alt='loading'
+                  width={'100%'}
+                  height={'100%'}
+                />
+              </>
+            )}
           </>
         )
       default:
