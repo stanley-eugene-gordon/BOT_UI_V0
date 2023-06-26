@@ -212,17 +212,6 @@ const PropertyListingWizard = () => {
                   >
                     {recording ? 'Stop Recording' : 'Start Recording'}
                   </Button>
-
-                  <Button
-                    sx={{
-                      marginLeft: '10px'
-                    }}
-                    type='button'
-                    variant='contained'
-                    color='success'
-                  >
-                    Upload Recording
-                  </Button>
                 </ButtonGroup>
               </>
             )}
