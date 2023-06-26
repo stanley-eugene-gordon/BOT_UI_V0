@@ -1,4 +1,4 @@
-const API_URL = 'https://isaapiv0-production.up.railway.app/v0/'
+const API_URL = 'https://isa-poc.onrender.com/v0/'
 
 interface IFetchEndpoint {
   endpoint: string

@@ -7,12 +7,15 @@ import { styled } from '@mui/material/styles'
 import MuiStep, { StepProps } from '@mui/material/Step'
 import CardContent, { CardContentProps } from '@mui/material/CardContent'
 import Icon from 'src/@core/components/icon'
+import MicRecorder from 'mic-recorder-to-mp3'
 
 import { hexToRGBA } from 'src/@core/utils/hex-to-rgba'
 import StepperWrapper from 'src/@core/styles/mui/stepper'
 
 import { EvaluationsApi } from '../../resources'
 import { VoiceAssistant } from '../../utils'
+
+const Mp3Recorder = new MicRecorder({ bitRate: 128 })
 
 const STEPS = [
   {
@@ -87,6 +90,7 @@ const PropertyListingWizard = () => {
   ])
 
   const [testQuestions, setTestQuestions] = useState('')
+  const [isBlocked, setIsBlocked] = useState<boolean>(false)
 
   const { get_metrics, create_evaluation, create_questions } = EvaluationsApi()
   const { speak } = VoiceAssistant()
@@ -100,14 +104,34 @@ const PropertyListingWizard = () => {
     audio.controls = true
   }
   const handleStartRecording = () => {
-    recorderControls.startRecording()
-    setRecording(true)
+    if (isBlocked) {
+      console.log('Permission Denied')
+    } else {
+      Mp3Recorder.start()
+        .then(() => {
+          setRecording(true)
+        })
+        .catch((e: any) => console.error(e))
+    }
   }
 
   const handleStopRecording = async () => {
-    recorderControls.stopRecording()
-    setRecording(false)
-    setLoading(true)
+    Mp3Recorder.stop()
+      .getMp3()
+      .then(async ([buffer, blob]: [Buffer, Blob]) => {
+        console.log(buffer, blob)
+        const evaluation = await create_evaluation({
+          audio: blob,
+          questions: testQuestions
+        })
+        if (evaluation) {
+          setFeedback(evaluation?.feedback)
+          setCurrentIdiom(evaluation?.language)
+          setLoading(false)
+        }
+        setRecording(false)
+      })
+      .catch((e: any) => console.log(e))
   }
 
   const handleRecording = () => {
@@ -130,17 +154,6 @@ const PropertyListingWizard = () => {
     }
   }
 
-  const CreateEvaluation = async () => {
-    if (recorderControls.recordingBlob) {
-      const evaluation = await create_evaluation({ audio: recorderControls.recordingBlob, questions: testQuestions })
-      if (evaluation) {
-        setFeedback(evaluation?.feedback)
-        setCurrentIdiom(evaluation?.language)
-        setLoading(false)
-      }
-    }
-  }
-
   const generateTestQuestions = async () => {
     if (currentIdiom) {
       const completionMessage = await create_questions({
@@ -154,12 +167,21 @@ const PropertyListingWizard = () => {
   }
 
   useEffect(() => {
-    HandleEvaluation()
-  }, [feedback])
+    navigator.mediaDevices
+      .getUserMedia({ audio: true })
+      .then(() => {
+        console.log('Microphone permissions granted.')
+        setIsBlocked(false)
+      })
+      .catch(() => {
+        console.log('Microphone permissions denied.')
+        setIsBlocked(true)
+      })
+  }, [])
 
   useEffect(() => {
-    CreateEvaluation()
-  }, [recorderControls.recordingBlob])
+    HandleEvaluation()
+  }, [feedback])
 
   useEffect(() => {
     setLoadingQuestions(true)
