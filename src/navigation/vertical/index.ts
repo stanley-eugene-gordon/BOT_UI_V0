@@ -4,26 +4,10 @@ import { VerticalNavItemsType } from 'src/@core/layouts/types'
 const navigation = (): VerticalNavItemsType => {
   return [
     {
-      title: 'Analytics',
-      path: '/analytics',
-      icon: 'tabler:chart-pie'
-    },
-    {
-      title: 'Teachers',
-      path: '/',
-      icon: 'tabler:users'
-    },
-    {
-      title: 'Students',
-      path: '/students',
-      icon: 'tabler:users'
-    },
-
-    {
       path: '/evaluation',
       action: 'read',
       subject: 'acl-page',
-      title: 'Evaluations',
+      title: 'POC',
       icon: 'tabler:file-text'
     }
   ]

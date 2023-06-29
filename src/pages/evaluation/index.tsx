@@ -142,15 +142,14 @@ const PropertyListingWizard = () => {
   }
 
   const generateTestQuestions = async () => {
-    if (currentIdiom) {
-      const completionMessage = await create_questions({
-        questions: `B1 level test questions for ${currentIdiom} within 3 questions. Focus on grammar and vocabulary, and consider the user can only respond via audio recordings so don't request edit tasks.`
-      })
-      if (completionMessage) {
-        setTestQuestions(completionMessage)
-        setLoadingQuestions(false)
-      }
-    }
+    await create_questions({
+      questions: `
+      Description: Formulate basic, beginner-level questions utilizing the idiom: ${currentIdiom}. The questions should be composed in the language denoted by ${currentIdiom}.
+      Guidelines: Please confine your contribution to a maximum of three questions. These queries should principally probe grammar and vocabulary of the ${currentIdiom}. Bear in mind that the user can only communicate responses via audio recordings, therefore, refrain from assigning tasks that necessitate text alterations.`
+    }).then(res => {
+      setTestQuestions(res)
+      setLoadingQuestions(false)
+    })
   }
 
   useEffect(() => {
@@ -225,14 +224,8 @@ const PropertyListingWizard = () => {
                   alignItems: 'center'
                 }}
               >
-                {loadingQuestions && !currentIdiom && <p>Waiting for the user to select a language..</p>}
+                {loadingQuestions && !currentIdiom && <p>Waiting for the user to select a language.... 🔎</p>}
                 {loadingQuestions && currentIdiom && <p>Generating test questions for {currentIdiom}...</p>}
-                <img
-                  src='https://i.pinimg.com/originals/11/25/70/112570d82b10188b1aaf2664c879e7b1.gif'
-                  alt='loading'
-                  width={70}
-                  height={60}
-                />
               </Box>
             )}
 
