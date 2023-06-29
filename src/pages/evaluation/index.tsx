@@ -142,14 +142,33 @@ const PropertyListingWizard = () => {
   }
 
   const generateTestQuestions = async () => {
-    await create_questions({
-      questions: `
+    if (currentIdiom) {
+      setTestQuestions('')
+      const spanish_prompt = `
+      Descripción: Formule preguntas básicas de nivel principiante utilizando el idioma: ${currentIdiom}. Las preguntas deben formularse en el idioma indicado por ${currentIdiom}.
+      Directrices: Limite su contribución a un máximo de tres preguntas. Estas preguntas deben sondear principalmente la gramática y el vocabulario del ${currentIdiom}. Tenga en cuenta que el usuario sólo puede comunicar las respuestas mediante grabaciones de audio, por lo tanto, absténgase de asignar tareas que requieran alteraciones del texto.`
+
+      const french_prompt =
+        currentIdiom === 'spanish'
+          ? spanish_prompt
+          : `
+      Description : Formulez des questions de base, de niveau débutant, en utilisant l'idiome : ${currentIdiom}.
+      Les questions doivent être formulées dans la langue indiquée par ${currentIdiom}. Lignes directrices : Veuillez limiter votre contribution à un maximum de trois questions. 
+      Ces questions doivent principalement porter sur la grammaire et le vocabulaire du ${currentIdiom}. Gardez à l'esprit que l'utilisateur ne peut communiquer ses réponses que par le biais d'enregistrements audio ; évitez donc de lui confier des tâches qui nécessitent des modifications `
+
+      const english_prompt = `
       Description: Formulate basic, beginner-level questions utilizing the idiom: ${currentIdiom}. The questions should be composed in the language denoted by ${currentIdiom}.
       Guidelines: Please confine your contribution to a maximum of three questions. These queries should principally probe grammar and vocabulary of the ${currentIdiom}. Bear in mind that the user can only communicate responses via audio recordings, therefore, refrain from assigning tasks that necessitate text alterations.`
-    }).then(res => {
-      setTestQuestions(res)
-      setLoadingQuestions(false)
-    })
+
+      const questions = currentIdiom === 'english' ? english_prompt : french_prompt
+
+      await create_questions({
+        questions: questions
+      }).then(res => {
+        setTestQuestions(res)
+        setLoadingQuestions(false)
+      })
+    }
   }
 
   useEffect(() => {
