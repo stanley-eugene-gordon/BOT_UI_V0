@@ -1,4 +1,4 @@
-const API_URL = 'https://botapiv0-production.up.railway.app/v0/'
+const API_URL = 'https://bot-api-zzgk.onrender.com/v0/'
 
 interface IFetchEndpoint {
   endpoint: string
