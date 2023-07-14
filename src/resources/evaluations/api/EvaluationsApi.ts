@@ -78,11 +78,22 @@ const EvaluationsApi = () => {
     return data
   }
 
+  const execute_task = async (id: string) => {
+    const result = await fetchEndpoint({
+      endpoint: `task/execute/${id}`,
+      method: 'POST'
+    })
+    const data = await result.json()
+
+    return data
+  }
+
   return {
     get_tasks,
     create_task,
     get_task,
-    delete_task
+    delete_task,
+    execute_task
   }
 }
 

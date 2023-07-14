@@ -15,6 +15,7 @@ import CustomTextField from 'src/@core/components/mui/text-field'
 import Icon from 'src/@core/components/icon'
 import CardHeader from '@mui/material/CardHeader'
 import { useDropzone } from 'react-dropzone'
+import CircularProgress from '@mui/material/CircularProgress'
 
 // ** Custom Component Import
 
@@ -45,6 +46,19 @@ const TableColumns = () => {
     steps: '.'
   })
   const [files, setFiles] = useState<File[]>([])
+  const [loading, setLoading] = useState<boolean>(false)
+  const [view, setView] = useState<boolean>(false)
+
+  const [currentTask, setCurrentTask] = useState({
+    id: '',
+    title: '',
+    description: '',
+    status: 'todo',
+    type: 'blob',
+    url: '',
+    file: '.',
+    steps: '.'
+  })
 
   const handleChange = (e: any) => {
     const { name, value } = e.target
@@ -58,7 +72,7 @@ const TableColumns = () => {
     setTask(prevTask => ({ ...prevTask, status: event.target.value as string }))
   }
 
-  const { get_tasks, delete_task, create_task } = EvaluationsApi()
+  const { get_tasks, delete_task, create_task, execute_task, get_task } = EvaluationsApi()
 
   // ** Hooks
   const { getRootProps, getInputProps } = useDropzone({
@@ -97,10 +111,16 @@ const TableColumns = () => {
 
   const handleCreate = async () => {
     await create_task(task).then(() => {
-      console.log(task)
       setCurrentId('')
-      handleClose()
-      setOpen(false)
+      setShow(false)
+      getTasks()
+    })
+  }
+
+  const handleExecute = async (id: string) => {
+    setLoading(true)
+    await execute_task(id).then(() => {
+      setLoading(false)
       getTasks()
     })
   }
@@ -121,9 +141,19 @@ const TableColumns = () => {
         return (
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-              <Typography>
+              <Button
+                variant='outlined'
+                color='primary'
+                size='small'
+                onClick={() => {
+                  setView(true)
+                  get_task(row.id).then(res => {
+                    setCurrentTask(res)
+                  })
+                }}
+              >
                 {row.title} | {row.description}
-              </Typography>
+              </Button>
             </Box>
           </Box>
         )
@@ -134,14 +164,14 @@ const TableColumns = () => {
       minWidth: 140,
       field: 'status',
       headerName: 'Status',
-      renderCell: () => {
+      renderCell: (params: GridRenderCellParams) => {
         return (
           <CustomChip
             rounded
             size='small'
             skin='light'
             color={'warning'}
-            label={'status'}
+            label={params.row.status}
             sx={{ '& .MuiChip-label': { textTransform: 'capitalize' } }}
           />
         )
@@ -152,14 +182,14 @@ const TableColumns = () => {
       minWidth: 140,
       field: 'type',
       headerName: 'Type',
-      renderCell: () => {
+      renderCell: (params: GridRenderCellParams) => {
         return (
           <CustomChip
             rounded
             size='small'
             skin='light'
-            color={'warning'}
-            label={'status'}
+            color={'info'}
+            label={params.row.type}
             sx={{ '& .MuiChip-label': { textTransform: 'capitalize' } }}
           />
         )
@@ -180,21 +210,27 @@ const TableColumns = () => {
               gap: '0.5rem'
             }}
           >
-            <Button variant='outlined' color='primary' size='small'>
-              Execute
-            </Button>
+            {loading ? (
+              <CircularProgress color='success' />
+            ) : (
+              <>
+                <Button variant='outlined' color='success' size='small' onClick={() => handleExecute(params.row.id)}>
+                  Execute
+                </Button>
 
-            <Button
-              variant='outlined'
-              color='error'
-              size='small'
-              onClick={() => {
-                setCurrentId(params.row.id)
-                setOpen(true)
-              }}
-            >
-              Delete
-            </Button>
+                <Button
+                  variant='outlined'
+                  color='error'
+                  size='small'
+                  onClick={() => {
+                    setCurrentId(params.row.id)
+                    setOpen(true)
+                  }}
+                >
+                  Delete
+                </Button>
+              </>
+            )}
           </Box>
         )
       }
@@ -375,6 +411,75 @@ const TableColumns = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* View Task DIALOG*/}
+
+      {view && currentTask && (
+        <Dialog fullWidth open={view} maxWidth='md' scroll='body' onClose={() => setView(false)}>
+          <DialogContent
+            sx={{
+              pb: theme => `${theme.spacing(8)} !important`,
+              px: theme => [`${theme.spacing(5)} !important`, `${theme.spacing(15)} !important`],
+              pt: theme => [`${theme.spacing(8)} !important`, `${theme.spacing(12.5)} !important`]
+            }}
+          >
+            <Button onClick={() => setView(false)}>
+              <Icon icon='tabler:x' fontSize='1.25rem' />
+            </Button>
+            <Box sx={{ mb: 8, textAlign: 'center' }}>
+              <Typography variant='h3' sx={{ mb: 3 }}>
+                {currentTask.title}
+              </Typography>
+              <Typography sx={{ color: 'text.secondary' }}>{currentTask.description}</Typography>
+            </Box>
+
+            <Grid container spacing={6}>
+              <Grid item sm={6} xs={12}>
+                <CustomTextField
+                  fullWidth
+                  label='Url'
+                  placeholder='https://www.some_website.com'
+                  onChange={handleChange}
+                  name='url'
+                  defaultValue={currentTask.url}
+                />
+              </Grid>
+              <Grid item sm={6} xs={12}>
+                <CustomTextField
+                  fullWidth
+                  label='Title'
+                  placeholder='Write a title to your task'
+                  onChange={handleChange}
+                  name='title'
+                  defaultValue={currentTask.title}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <CustomTextField
+                  fullWidth
+                  label='Description'
+                  placeholder='Write a description to your task'
+                  onChange={handleChange}
+                  name='description'
+                  defaultValue={currentTask.description}
+                />
+              </Grid>
+
+              <Grid item xs={12}>
+                <Button
+                  variant='contained'
+                  color='primary'
+                  component='a'
+                  href={`http://localhost:5000/v0/task/download/${currentTask.id}`}
+                  download
+                >
+                  Download CSV
+                </Button>
+              </Grid>
+            </Grid>
+          </DialogContent>
+        </Dialog>
+      )}
     </Card>
   )
 }
