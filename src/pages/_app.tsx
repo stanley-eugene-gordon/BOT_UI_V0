@@ -116,9 +116,9 @@ const App = (props: ExtendedAppProps) => {
   return (
     <CacheProvider value={emotionCache}>
       <Head>
-        <title>Intelligent Study Analysis</title>
-        <meta name='description' content={'Intelligent Study Analysis'} />
-        <meta name='keywords' content='intelligent Study Analysis(ISA)' />
+        <title>V0.0</title>
+        <meta name='description' content={'V0.0'} />
+        <meta name='keywords' content='V0.0' />
         <meta name='viewport' content='initial-scale=1, width=device-width' />
       </Head>
 

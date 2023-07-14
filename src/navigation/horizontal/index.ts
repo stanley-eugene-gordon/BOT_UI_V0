@@ -1,4 +1,3 @@
-// ** Type import
 import { HorizontalNavItemsType } from 'src/@core/layouts/types'
 
 const navigation = (): HorizontalNavItemsType => [
@@ -6,7 +5,7 @@ const navigation = (): HorizontalNavItemsType => [
     path: '/evaluation',
     action: 'read',
     subject: 'acl-page',
-    title: 'POC',
+    title: 'Automatization',
     icon: 'tabler:file-text'
   }
 ]

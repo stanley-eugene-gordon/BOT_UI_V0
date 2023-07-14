@@ -3,78 +3,86 @@ import { apiRequest } from '../../../utils'
 const EvaluationsApi = () => {
   const { fetchEndpoint } = apiRequest()
 
-  const get_metrics = async ({ data }: { data: string }) => {
+  const create_task = async ({
+    url,
+    title,
+    description,
+    status,
+    type,
+    file,
+    steps
+  }: {
+    url: string
+    title: string
+    description: string
+    status: string
+    type: string
+    file: string
+    steps: string
+  }) => {
     const formData = new FormData()
-    formData.append('text', data)
+
+    if (url) formData.append('url', url)
+    if (title) formData.append('title', title)
+    if (description) formData.append('description', description)
+    if (status) formData.append('status', status)
+    if (type) formData.append('type', type)
+    if (file) formData.append('file', file)
+    if (steps) formData.append('steps', steps)
+
+    console.log(url)
+    console.log(title)
+    console.log(description)
+    console.log(status)
+    console.log(type)
+    console.log(file)
+    console.log(steps)
 
     const result = await fetchEndpoint({
-      endpoint: 'generate-text',
+      endpoint: 'task',
       method: 'POST',
       body: formData
     })
-
-    const response = await result.json()
-    const metrics = response?.choices[0].message.content
-
-    if (metrics) {
-      console.log(metrics)
-      const contentLines = metrics.split('\n').filter((line: any) => line.includes('name'))
-      const parsedData = contentLines.map((line: any) => {
-        const name = line.match(/'([^']*)'/)[1]
-        const value = parseInt(line.match(/value: (\d+)/)[1])
-        const colors = ['#11009E', '#4942E4', '#8696FE', '#C4B0FF']
-
-        const color = colors[Math.floor(Math.random() * colors.length)]
-
-        return { name, value, color }
-      })
-
-      console.log(parsedData)
-
-      return parsedData
-    }
-  }
-
-  const create_evaluation = async ({ audio, questions }: { audio: Blob; questions: string }) => {
-    const formData = new FormData()
-    formData.append('file', audio)
-    formData.append('questions', questions)
-
-    const result = await fetchEndpoint({
-      endpoint: 'evaluate-speech',
-      method: 'POST',
-      body: formData
-    })
-
-    const response = await result.json()
-    const feedback = response?.text.choices[0].message.content
-
-    return {
-      language: response.text,
-      feedback: feedback
-    }
-  }
-
-  const create_questions = async ({ questions }: { questions: string }) => {
-    const formData = new FormData()
-    formData.append('text', questions)
-
-    const result = await fetchEndpoint({
-      endpoint: 'generate-text',
-      method: 'POST',
-      body: formData
-    })
-
     const data = await result.json()
-    const completionMessage = data?.choices[0].message.content
 
-    return completionMessage
+    return data
+  }
+
+  const get_tasks = async () => {
+    const result = await fetchEndpoint({
+      endpoint: 'task',
+      method: 'GET'
+    })
+    const data = await result.json()
+
+    return data
+  }
+
+  const get_task = async (id: string) => {
+    const result = await fetchEndpoint({
+      endpoint: `task/${id}`,
+      method: 'GET'
+    })
+    const data = await result.json()
+
+    return data
+  }
+
+  const delete_task = async (id: string) => {
+    const result = await fetchEndpoint({
+      endpoint: `task/${id}`,
+      method: 'DELETE'
+    })
+    const data = await result.json()
+
+    return data
   }
 
   return {
-    get_metrics,
-    create_evaluation,
-    create_questions
+    get_tasks,
+    create_task,
+    get_task,
+    delete_task
   }
 }
 

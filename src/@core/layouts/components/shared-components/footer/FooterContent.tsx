@@ -5,7 +5,7 @@ const FooterContent = () => {
   return (
     <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
       <Typography sx={{ mr: 2, display: 'flex', color: 'text.secondary' }}>
-        {`© ${new Date().getFullYear()} ISA - All Rights Reserved.`}
+        {`© ${new Date().getFullYear()} V0 - All Rights Reserved.`}
       </Typography>
     </Box>
   )

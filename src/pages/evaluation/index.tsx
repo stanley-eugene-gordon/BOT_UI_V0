@@ -1,439 +1,382 @@
-import { useState, useEffect, Fragment } from 'react'
-import { AudioRecorder, useAudioRecorder } from 'react-audio-voice-recorder'
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
-import { ButtonGroup, Box, Card, Avatar, Button, Stepper, StepLabel, Typography, CircularProgress } from '@mui/material'
-import CustomAvatar from 'src/@core/components/mui/avatar'
-import { styled } from '@mui/material/styles'
-import MuiStep, { StepProps } from '@mui/material/Step'
-import CardContent, { CardContentProps } from '@mui/material/CardContent'
+import { useState, useEffect } from 'react'
+import Box from '@mui/material/Box'
+import Card from '@mui/material/Card'
+import Button from '@mui/material/Button'
+import Typography from '@mui/material/Typography'
+import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid'
+import Dialog from '@mui/material/Dialog'
+import DialogTitle from '@mui/material/DialogTitle'
+import DialogContent from '@mui/material/DialogContent'
+import DialogActions from '@mui/material/DialogActions'
+import DialogContentText from '@mui/material/DialogContentText'
+import MenuItem from '@mui/material/MenuItem'
+import Grid from '@mui/material/Grid'
+import CustomTextField from 'src/@core/components/mui/text-field'
 import Icon from 'src/@core/components/icon'
+import CardHeader from '@mui/material/CardHeader'
+import { useDropzone } from 'react-dropzone'
 
-import { hexToRGBA } from 'src/@core/utils/hex-to-rgba'
-import StepperWrapper from 'src/@core/styles/mui/stepper'
+// ** Custom Component Import
 
+import CustomChip from 'src/@core/components/mui/chip'
 import { EvaluationsApi } from '../../resources'
-import { VoiceAssistant } from '../../utils'
 
-const STEPS = [
-  {
-    icon: 'tabler:file-text',
-    title: 'Questions',
-    subtitle: 'A1 level questions'
-  },
-  {
-    icon: 'tabler:file-text',
-    subtitle: 'A1 level evaluation',
-    title: 'Evaluation'
-  }
-]
-
-interface LabelProp {
-  cx: number
-  cy: number
-  percent: number
-  midAngle: number
-  innerRadius: number
-  outerRadius: number
+interface FileProp {
+  name: string
+  type: string
+  size: number
 }
 
-const StepperHeaderContainer = styled(CardContent)<CardContentProps>(({ theme }) => ({
-  borderRight: `1px solid ${theme.palette.divider}`,
-  [theme.breakpoints.down('lg')]: {
-    borderRight: 0,
-    borderBottom: `1px solid ${theme.palette.divider}`
+const TableColumns = () => {
+  // ** States
+  const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 7 })
+  const [tasks, setTasks] = useState([])
+  const [open, setOpen] = useState<boolean>(false)
+  const [show, setShow] = useState<boolean>(false)
+  const [currentId, setCurrentId] = useState<string>('')
+  const handleClose = () => setOpen(false)
+  const [task, setTask] = useState({
+    title: '',
+    description: '',
+    status: 'todo',
+    type: 'blob',
+    url: '',
+    file: '.',
+    steps: '.'
+  })
+  const [files, setFiles] = useState<File[]>([])
+
+  const handleChange = (e: any) => {
+    const { name, value } = e.target
+    setTask(prevState => ({ ...prevState, [name]: value }))
   }
-}))
-
-const Step = styled(MuiStep)<StepProps>(({ theme }) => ({
-  '& .MuiStepLabel-root': {
-    paddingTop: 0
-  },
-  '&:not(:last-of-type) .MuiStepLabel-root': {
-    paddingBottom: theme.spacing(5)
-  },
-  '&:last-of-type .MuiStepLabel-root': {
-    paddingBottom: 0
-  },
-  '& .MuiStepLabel-iconContainer': {
-    display: 'none'
-  },
-  '& .step-subtitle': {
-    color: `${theme.palette.text.disabled} !important`
-  },
-  '& + svg': {
-    color: theme.palette.text.disabled
-  },
-  '&.Mui-completed .step-title': {
-    color: theme.palette.text.disabled
-  },
-  '& .MuiStepLabel-label': {
-    cursor: 'pointer'
-  }
-}))
-
-const PropertyListingWizard = () => {
-  const [activeStep, setActiveStep] = useState<number>(0)
-  const [feedback, setFeedback] = useState('')
-  const [recording, setRecording] = useState<boolean>(false)
-  const [currentIdiom, setCurrentIdiom] = useState<string>('')
-  const [loading, setLoading] = useState<boolean>(false)
-  const [loadingQuestions, setLoadingQuestions] = useState<boolean>(false)
-  const [data, setData] = useState([
-    {
-      name: 'Vocabulary',
-      value: 5,
-      color: '#00d4bd'
-    }
-  ])
-
-  const [testQuestions, setTestQuestions] = useState('')
-
-  const { get_metrics, create_evaluation, create_questions } = EvaluationsApi()
-  const { speak } = VoiceAssistant()
-
-  const recorderControls = useAudioRecorder()
-
-  const addAudioElement = (blob: any) => {
-    const url = URL.createObjectURL(blob)
-    const audio = document.createElement('audio')
-    audio.src = url
-    audio.controls = true
-  }
-  const handleStartRecording = () => {
-    recorderControls.startRecording()
-    setRecording(true)
+  const handleTypeChange = (event: React.ChangeEvent<{ value: unknown }>) => {
+    setTask(prevTask => ({ ...prevTask, type: event.target.value as string }))
   }
 
-  const handleStopRecording = async () => {
-    recorderControls.stopRecording()
-    setRecording(false)
-    setLoading(true)
+  const handleStatusChange = (event: React.ChangeEvent<{ value: unknown }>) => {
+    setTask(prevTask => ({ ...prevTask, status: event.target.value as string }))
   }
 
-  const handleRecording = () => {
-    recording ? handleStopRecording() : handleStartRecording()
-  }
+  const { get_tasks, delete_task, create_task } = EvaluationsApi()
 
-  const HandleEvaluation = async () => {
-    if (feedback) {
-      setActiveStep(prevStep => prevStep + 1)
-      speak(feedback, currentIdiom)
-      const result = await get_metrics({
-        data: `generate a JSON object with the metrics for this feedback: ${feedback} only return the json object with the metrics and not the feedback itself just the metrics in this format  [
-          { name: 'Vocabulary', value: 5, color: '#00d4bd' },
-          { name: 'Comprehension', value: 8, color: '#ff5c7c' },
-          { name: 'Grammar', value: 10, color: '#ffa900' },
-          { name: 'Fluency', value: 10, color: '#0abb87' }
-        ]`
-      })
-      setData(result)
-    }
-  }
+  // ** Hooks
+  const { getRootProps, getInputProps } = useDropzone({
+    multiple: false,
+    onDrop: async (acceptedFiles: File[]) => {
+      setFiles(acceptedFiles)
 
-  const CreateEvaluation = async () => {
-    if (recorderControls.recordingBlob) {
-      const evaluation = await create_evaluation({ audio: recorderControls.recordingBlob, questions: testQuestions })
-      if (evaluation) {
-        setFeedback(evaluation?.feedback)
-        setCurrentIdiom(evaluation?.language)
-        setLoading(false)
+      const file = acceptedFiles[0]
+      const reader = new FileReader()
+      reader.onload = async event => {
+        if (event.target) {
+          const content = event.target.result as string
+          setTask(prevState => ({ ...prevState, steps: content }))
+        }
       }
+      reader.readAsText(file)
     }
+  })
+
+  const file = files.map((file: FileProp) => <Typography key={file.name}>Uploaded file: {file.name}</Typography>)
+
+  const getTasks = async () => {
+    get_tasks().then(res => {
+      setTasks(res)
+    })
   }
 
-  const generateTestQuestions = async () => {
-    if (currentIdiom) {
-      setTestQuestions('')
-      const spanish_prompt = `
-      Descripción: Formule preguntas básicas de nivel principiante utilizando el idioma: ${currentIdiom}. Las preguntas deben formularse en el idioma indicado por ${currentIdiom}.
-      Directrices: Limite su contribución a un máximo de tres preguntas. Estas preguntas deben sondear principalmente la gramática y el vocabulario del ${currentIdiom}. Tenga en cuenta que el usuario sólo puede comunicar las respuestas mediante grabaciones de audio, por lo tanto, absténgase de asignar tareas que requieran alteraciones del texto.`
+  const handleDelete = async (id: string) => {
+    await delete_task(id).then(() => {
+      setCurrentId('')
+      handleClose()
+      setOpen(false)
+      getTasks()
+    })
+  }
 
-      const french_prompt =
-        currentIdiom === 'spanish'
-          ? spanish_prompt
-          : `
-      Description : Formulez des questions de base, de niveau débutant, en utilisant l'idiome : ${currentIdiom}.
-      Les questions doivent être formulées dans la langue indiquée par ${currentIdiom}. Lignes directrices : Veuillez limiter votre contribution à un maximum de trois questions. 
-      Ces questions doivent principalement porter sur la grammaire et le vocabulaire du ${currentIdiom}. Gardez à l'esprit que l'utilisateur ne peut communiquer ses réponses que par le biais d'enregistrements audio ; évitez donc de lui confier des tâches qui nécessitent des modifications `
-
-      const english_prompt = `
-      Description: Formulate basic, beginner-level questions utilizing the idiom: ${currentIdiom}. The questions should be composed in the language denoted by ${currentIdiom}.
-      Guidelines: Please confine your contribution to a maximum of three questions. These queries should principally probe grammar and vocabulary of the ${currentIdiom}. Bear in mind that the user can only communicate responses via audio recordings, therefore, refrain from assigning tasks that necessitate text alterations.`
-
-      const questions = currentIdiom === 'english' ? english_prompt : french_prompt
-
-      await create_questions({
-        questions: questions
-      }).then(res => {
-        setTestQuestions(res)
-        setLoadingQuestions(false)
-      })
-    }
+  const handleCreate = async () => {
+    await create_task(task).then(() => {
+      console.log(task)
+      setCurrentId('')
+      handleClose()
+      setOpen(false)
+      getTasks()
+    })
   }
 
   useEffect(() => {
-    HandleEvaluation()
-  }, [feedback])
+    getTasks()
+  }, [])
 
-  useEffect(() => {
-    CreateEvaluation()
-  }, [recorderControls.recordingBlob])
+  const columns: GridColDef[] = [
+    {
+      flex: 0.25,
+      minWidth: 290,
+      field: 'title',
+      headerName: 'Title',
+      renderCell: (params: GridRenderCellParams) => {
+        const { row } = params
 
-  useEffect(() => {
-    setLoadingQuestions(true)
-    generateTestQuestions()
-  }, [currentIdiom])
-
-  const renderCustomizedLabel = (props: LabelProp) => {
-    const RADIAN = Math.PI / 180
-    const { cx, cy, midAngle, innerRadius, outerRadius, percent } = props
-
-    const radius = innerRadius + (outerRadius - innerRadius) * 0.5
-    const x = cx + radius * Math.cos(-midAngle * RADIAN)
-    const y = cy + radius * Math.sin(-midAngle * RADIAN)
-
-    return (
-      <text x={x} y={y} fill='#fff' textAnchor='middle' dominantBaseline='central'>
-        {`${(percent * 100).toFixed(0)}%`}
-      </text>
-    )
-  }
-
-  const getStepContent = (step: number) => {
-    switch (step) {
-      case 0:
         return (
-          <Box
-            sx={{
-              width: '100%'
-            }}
-          >
-            {!loadingQuestions && (
-              <>
-                <p>
-                  {testQuestions.split('\n').map((item, key) => {
-                    return (
-                      <Fragment key={key}>
-                        {item}
-                        <br />
-                      </Fragment>
-                    )
-                  })}
-                </p>
-
-                <ButtonGroup variant='outlined'>
-                  <Button
-                    onClick={handleRecording}
-                    type='button'
-                    variant='contained'
-                    color={recording ? 'error' : 'primary'}
-                  >
-                    {recording ? 'Stop Recording' : 'Start Recording'}
-                  </Button>
-                </ButtonGroup>
-              </>
-            )}
-
-            {loadingQuestions && (
-              <Box
-                sx={{
-                  width: '100%',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center'
-                }}
-              >
-                {loadingQuestions && !currentIdiom && <p>Waiting for the user to select a language.... 🔎</p>}
-                {loadingQuestions && currentIdiom && <p>Generating test questions for {currentIdiom}...</p>}
-              </Box>
-            )}
-
-            <Box
-              sx={{
-                '& > div': {
-                  boxShadow: 'none !important',
-                  backgroundColor: '#fff !important',
-                  display: 'none !important'
-                }
-              }}
-            >
-              <AudioRecorder onRecordingComplete={addAudioElement} recorderControls={recorderControls} />
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+              <Typography>
+                {row.title} | {row.description}
+              </Typography>
             </Box>
           </Box>
         )
-      case 1:
+      }
+    },
+    {
+      flex: 0.2,
+      minWidth: 140,
+      field: 'status',
+      headerName: 'Status',
+      renderCell: () => {
         return (
-          <>
-            {feedback && (
-              <>
-                <p>
-                  {feedback.split('\n').map((item, key) => {
-                    return (
-                      <>
-                        <Fragment key={key}>
-                          {item}
-                          <br />
-                        </Fragment>
-                      </>
-                    )
-                  })}
-                </p>
-
-                <Box sx={{ height: 350 }}>
-                  <ResponsiveContainer>
-                    <PieChart height={350} style={{ direction: 'ltr' }}>
-                      <Pie data={data} innerRadius={80} dataKey='value' label={renderCustomizedLabel} labelLine={false}>
-                        {data.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </Box>
-              </>
-            )}
-
-            {!feedback && <p>Record and audio resolving the questions to process/show your evaluation 😄 📖</p>}
-            {feedback && (
-              <>
-                <img
-                  src='https://images.openai.com/blob/18ff9c06-7853-4e3b-946f-508f0cd7ed13/asr-details-desktop.svg?width=10&height=10&quality=50'
-                  alt='loading'
-                  width={'100%'}
-                  height={'100%'}
-                />
-              </>
-            )}
-          </>
+          <CustomChip
+            rounded
+            size='small'
+            skin='light'
+            color={'warning'}
+            label={'status'}
+            sx={{ '& .MuiChip-label': { textTransform: 'capitalize' } }}
+          />
         )
-      default:
-        return null
-    }
-  }
+      }
+    },
+    {
+      flex: 0.2,
+      minWidth: 140,
+      field: 'type',
+      headerName: 'Type',
+      renderCell: () => {
+        return (
+          <CustomChip
+            rounded
+            size='small'
+            skin='light'
+            color={'warning'}
+            label={'status'}
+            sx={{ '& .MuiChip-label': { textTransform: 'capitalize' } }}
+          />
+        )
+      }
+    },
+    {
+      flex: 0.125,
+      minWidth: 140,
+      field: 'actions',
+      headerName: 'Actions',
+      renderCell: (params: GridRenderCellParams) => {
+        return (
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '0.5rem'
+            }}
+          >
+            <Button variant='outlined' color='primary' size='small'>
+              Execute
+            </Button>
 
-  const renderContent = () => {
-    return getStepContent(activeStep)
-  }
-
-  return (
-    <>
-      <ButtonGroup variant='outlined'>
-        <Button
-          onClick={() => {
-            setCurrentIdiom('english')
-            setLoadingQuestions(true)
-            generateTestQuestions()
-          }}
-          type='button'
-          variant='contained'
-          color={'error'}
-        >
-          English
-        </Button>
-
-        <Button
-          sx={{
-            marginLeft: '10px'
-          }}
-          type='button'
-          variant='contained'
-          color='warning'
-          onClick={() => {
-            setCurrentIdiom('spanish')
-            setLoadingQuestions(true)
-            generateTestQuestions()
-          }}
-        >
-          Spanish
-        </Button>
-
-        <Button
-          sx={{
-            marginLeft: '10px'
-          }}
-          type='button'
-          variant='contained'
-          color='success'
-          onClick={() => {
-            setCurrentIdiom('french')
-            setLoadingQuestions(true)
-            generateTestQuestions()
-          }}
-        >
-          French
-        </Button>
-      </ButtonGroup>
-
-      <Card sx={{ display: 'flex', flexDirection: { xs: 'column', lg: 'row' } }}>
-        <StepperHeaderContainer>
-          <StepperWrapper sx={{ height: '100%' }}>
-            <Stepper
-              connector={<></>}
-              orientation='vertical'
-              activeStep={activeStep}
-              sx={{ height: '100%', minWidth: '15rem' }}
-            >
-              {STEPS.map((step, index) => {
-                const RenderAvatar = activeStep >= index ? CustomAvatar : Avatar
-
-                return (
-                  <Step
-                    key={index}
-                    onClick={() => setActiveStep(index)}
-                    sx={{ '&.Mui-completed + svg': { color: 'primary.main' } }}
-                  >
-                    <StepLabel>
-                      <div className='step-label'>
-                        <RenderAvatar
-                          variant='rounded'
-                          {...(activeStep >= index && { skin: 'light' })}
-                          {...(activeStep === index && { skin: 'filled' })}
-                          {...(activeStep >= index && { color: 'primary' })}
-                          sx={{
-                            ...(activeStep === index && { boxShadow: theme => theme.shadows[3] }),
-                            ...(activeStep > index && { color: theme => hexToRGBA(theme.palette.primary.main, 0.4) })
-                          }}
-                        >
-                          <Icon icon={step.icon} fontSize='1.5rem' />
-                        </RenderAvatar>
-                        <div>
-                          <Typography className='step-title'>{step.title}</Typography>
-                          <Typography className='step-subtitle'>{step.subtitle}</Typography>
-                        </div>
-                      </div>
-                    </StepLabel>
-                  </Step>
-                )
-              })}
-            </Stepper>
-          </StepperWrapper>
-        </StepperHeaderContainer>
-        <CardContent
-          sx={{
-            width: '100%',
-            pt: theme => `${theme.spacing(6)} !important`
-          }}
-        >
-          {loading ? (
-            <Box
-              sx={{
-                width: '100%',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center'
+            <Button
+              variant='outlined'
+              color='error'
+              size='small'
+              onClick={() => {
+                setCurrentId(params.row.id)
+                setOpen(true)
               }}
             >
-              <p>Processing Evaluation...</p>
-              <CircularProgress size={25} />
-            </Box>
-          ) : (
-            renderContent()
-          )}
-        </CardContent>
-      </Card>
-    </>
+              Delete
+            </Button>
+          </Box>
+        )
+      }
+    }
+  ]
+
+  return (
+    <Card>
+      <CardHeader
+        title='Column'
+        action={
+          <div>
+            <Button size='medium' variant='contained' onClick={() => setShow(true)}>
+              Add New Task
+            </Button>
+          </div>
+        }
+      />
+      <DataGrid
+        autoHeight
+        rows={tasks}
+        columns={columns}
+        disableRowSelectionOnClick
+        pageSizeOptions={[7, 10, 25, 50]}
+        paginationModel={paginationModel}
+        onPaginationModelChange={setPaginationModel}
+      />
+
+      <Dialog open={open} onClose={handleClose} aria-labelledby='form-dialog-title'>
+        <DialogTitle id='form-dialog-title'>Confirm Deletion</DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ mb: 3 }}>
+            Are you sure you want to delete this task? This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions className='dialog-actions-dense'>
+          <Button
+            onClick={() => {
+              handleDelete(currentId)
+            }}
+          >
+            Confirm
+          </Button>
+          <Button
+            onClick={() => {
+              handleClose()
+            }}
+          >
+            Cancel
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* POST TASK DIALOG*/}
+      <Dialog fullWidth open={show} maxWidth='md' scroll='body' onClose={() => setShow(false)}>
+        <DialogContent
+          sx={{
+            pb: theme => `${theme.spacing(8)} !important`,
+            px: theme => [`${theme.spacing(5)} !important`, `${theme.spacing(15)} !important`],
+            pt: theme => [`${theme.spacing(8)} !important`, `${theme.spacing(12.5)} !important`]
+          }}
+        >
+          <Button onClick={() => setShow(false)}>
+            <Icon icon='tabler:x' fontSize='1.25rem' />
+          </Button>
+          <Box sx={{ mb: 8, textAlign: 'center' }}>
+            <Typography variant='h3' sx={{ mb: 3 }}>
+              Add New Task
+            </Typography>
+            <Typography sx={{ color: 'text.secondary' }}>Fill in the form below to add a new task.</Typography>
+          </Box>
+          <Grid container spacing={6}>
+            <Grid item sm={6} xs={12}>
+              <CustomTextField
+                fullWidth
+                label='Url'
+                placeholder='https://www.some_website.com'
+                onChange={handleChange}
+                name='url'
+              />
+            </Grid>
+            <Grid item sm={6} xs={12}>
+              <CustomTextField
+                fullWidth
+                label='Title'
+                placeholder='Write a title to your task'
+                onChange={handleChange}
+                name='title'
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <CustomTextField
+                fullWidth
+                label='Description'
+                placeholder='Write a description to your task'
+                onChange={handleChange}
+                name='description'
+              />
+            </Grid>
+            <Grid item sm={6} xs={12}>
+              <CustomTextField
+                select
+                defaultValue='todo'
+                fullWidth
+                id='status-select'
+                label='Status'
+                onChange={handleStatusChange}
+                name='status'
+              >
+                <MenuItem value='todo'>Todo</MenuItem>
+              </CustomTextField>
+            </Grid>
+            <Grid item sm={6} xs={12}>
+              <CustomTextField
+                select
+                defaultValue='blob'
+                fullWidth
+                id='status-select'
+                label='Type'
+                onChange={handleTypeChange}
+                name='type'
+              >
+                <MenuItem value='blob'>Blob</MenuItem>
+              </CustomTextField>
+            </Grid>
+
+            <Grid item xs={12}>
+              <Box {...getRootProps({ className: 'dropzone' })}>
+                <input {...getInputProps()} />
+                {files.length ? (
+                  <Box sx={{ display: 'flex', textAlign: 'center', alignItems: 'center', flexDirection: 'column' }}>
+                    {file}
+                  </Box>
+                ) : (
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      textAlign: 'center',
+                      alignItems: 'center',
+                      flexDirection: 'column',
+                      minHeight: 300,
+                      flexWrap: 'wrap',
+                      cursor: 'pointer',
+                      position: 'relative',
+                      justifyContent: 'center',
+                      borderRadius: '0.5rem',
+                      border: `2px dashed #ccc`
+                    }}
+                  >
+                    <Typography variant='h4' sx={{ mb: 2.5 }}>
+                      Drop your task JSON file here
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions
+          sx={{
+            justifyContent: 'center',
+            px: theme => [`${theme.spacing(5)} !important`, `${theme.spacing(15)} !important`],
+            pb: theme => [`${theme.spacing(8)} !important`, `${theme.spacing(12.5)} !important`]
+          }}
+        >
+          <Button
+            variant='contained'
+            sx={{ mr: 1 }}
+            onClick={() => {
+              handleCreate()
+            }}
+          >
+            Submit
+          </Button>
+
+          <Button variant='tonal' color='secondary' onClick={() => setShow(false)}>
+            Discard
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Card>
   )
 }
 
-export default PropertyListingWizard
+export default TableColumns

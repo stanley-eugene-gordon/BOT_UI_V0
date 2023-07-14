@@ -142,7 +142,7 @@ const LoginPage = () => {
           <Box sx={{ width: '100%', maxWidth: 400 }}>
             <Box sx={{ my: 6 }}>
               <Typography variant='h3' sx={{ mb: 1.5 }}>
-                {`Welcome to ${themeConfig.templateName}!`}
+                {`Early access ${themeConfig.templateName}`}
               </Typography>
             </Box>
             <Alert icon={false} sx={{ py: 3, mb: 6, ...bgColors.primaryLight, '& .MuiAlert-message': { p: 0 } }}>

@@ -62,22 +62,7 @@ const Register = () => {
 
   return (
     <Box className='content-right' sx={{ backgroundColor: 'background.paper' }}>
-      {!hidden ? (
-        <Box
-          sx={{
-            flex: 1,
-            display: 'flex',
-            position: 'relative',
-            alignItems: 'center',
-            borderRadius: '20px',
-            justifyContent: 'center',
-            backgroundColor: 'customColors.bodyBg',
-            margin: theme => theme.spacing(8, 0, 8, 8)
-          }}
-        >
-          {'*Logo*'}
-        </Box>
-      ) : null}
+      {!hidden ? <></> : null}
       <RightWrapper>
         <Box
           sx={{

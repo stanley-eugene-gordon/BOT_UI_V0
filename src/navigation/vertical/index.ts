@@ -7,7 +7,7 @@ const navigation = (): VerticalNavItemsType => {
       path: '/evaluation',
       action: 'read',
       subject: 'acl-page',
-      title: 'POC',
+      title: 'Automatization',
       icon: 'tabler:file-text'
     }
   ]
