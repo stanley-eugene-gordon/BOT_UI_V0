@@ -7,8 +7,6 @@ interface IFetchEndpoint {
   headers?: any
 }
 
-// lets see
-
 function apiRequest() {
   const fetchEndpoint = async ({ endpoint, method, body, headers }: IFetchEndpoint) => {
     try {
