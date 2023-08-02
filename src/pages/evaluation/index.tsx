@@ -41,7 +41,7 @@ const TableColumns = () => {
     description: '',
     status: 'todo',
     type: 'blob',
-    url: '',
+    url: 'https://google.com',
     file: '.',
     steps: '.'
   })
@@ -55,7 +55,7 @@ const TableColumns = () => {
     description: '',
     status: 'todo',
     type: 'blob',
-    url: '',
+    url: 'https://google.com',
     file: '.',
     steps: '.'
   })
@@ -306,15 +306,6 @@ const TableColumns = () => {
             <Grid item sm={6} xs={12}>
               <CustomTextField
                 fullWidth
-                label='Url'
-                placeholder='https://www.some_website.com'
-                onChange={handleChange}
-                name='url'
-              />
-            </Grid>
-            <Grid item sm={6} xs={12}>
-              <CustomTextField
-                fullWidth
                 label='Title'
                 placeholder='Write a title to your task'
                 onChange={handleChange}
@@ -434,16 +425,6 @@ const TableColumns = () => {
             </Box>
 
             <Grid container spacing={6}>
-              <Grid item sm={6} xs={12}>
-                <CustomTextField
-                  fullWidth
-                  label='Url'
-                  placeholder='https://www.some_website.com'
-                  onChange={handleChange}
-                  name='url'
-                  defaultValue={currentTask.url}
-                />
-              </Grid>
               <Grid item sm={6} xs={12}>
                 <CustomTextField
                   fullWidth
